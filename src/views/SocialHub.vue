@@ -29,7 +29,7 @@
 
   let signedIn = ref(false);
   //Makes sure the user is signed in before they may use features
-  if(fire.getAuth().currentUser){
+  if(getAuth().currentUser){
     signedIn.value = true;
   }
   let IsError = ref(false); //True if there is any error with the firebase calls
@@ -86,30 +86,34 @@
     clickedDrink.push(Drinks[index]);
     const Check = firebase.database().ref();
     //Check if it is the User's own drink they made
-    IsUsers.value = false;
-    await Check.child('users').child(getAuth().currentUser.uid).child('publicDrinks').get()
-    .then((data)=>{
-      data.forEach((drink)=>{
-        if(drink.key === clickedDrink[0].DrinkID){
-          IsUsers.value = true;
-        }
-      })
-    })
+    if(getAuth().currentUser){
+      IsUsers.value = false;
 
-
-    // Checks if this drink has been liked by the current user
-    Favorite.value = false;
-    if(!IsUsers){
-      await Check.child('users').child(getAuth().currentUser.uid).child('UserDrinkFavorites').get()
-          .then((result) => {
-            result.forEach((drink) => {
-              console.log(clickedDrink[0].DrinkID + ' === ' + drink.key)
-              if (clickedDrink[0].DrinkID === drink.key) {
-                Favorite.value = true;
+      await Check.child('users').child(getAuth().currentUser.uid).child('publicDrinks').get()
+          .then((data)=>{
+            data.forEach((drink)=>{
+              if(drink.key === clickedDrink[0].DrinkID){
+                IsUsers.value = true;
               }
             })
-          });
+          })
+
+
+      // Checks if this drink has been liked by the current user
+      Favorite.value = false;
+      if(!IsUsers){
+        await Check.child('users').child(getAuth().currentUser.uid).child('UserDrinkFavorites').get()
+            .then((result) => {
+              result.forEach((drink) => {
+                console.log(clickedDrink[0].DrinkID + ' === ' + drink.key)
+                if (clickedDrink[0].DrinkID === drink.key) {
+                  Favorite.value = true;
+                }
+              })
+            });
+      }
     }
+
 
 
 
@@ -171,7 +175,7 @@
 
   onAuthStateChanged(getAuth(), ()=>{
 
-    if(signedIn){
+    if(getAuth().currentUser){
 
       //Makes sure userInfo is empty
       UserInfo.length = 0;

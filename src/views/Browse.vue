@@ -227,6 +227,8 @@ getRandomCocktail();
 
 <template>
 
+  <div v-if="showSpecificDrinkInfo && specificDrinkInformation.length !== 0" @click="showSpecificDrinkInfo = !showSpecificDrinkInfo" class="Black-Overlay"></div>
+
   <div id="View"> <!-- Beginning of the View -->
 
 
@@ -258,7 +260,7 @@ getRandomCocktail();
         </div>
       </div>
     </Transition>
-    <div v-if="showSpecificDrinkInfo && specificDrinkInformation.length !== 0" @click="showSpecificDrinkInfo = !showSpecificDrinkInfo" class="Black-Overlay"></div>
+
 
 
     <!-- Constant Content -->
@@ -343,6 +345,7 @@ getRandomCocktail();
 .Content{
   display: grid;
   grid-template-columns: 50% 50%;
+  margin: 0 auto 3em auto;
 
 }
 
@@ -350,11 +353,12 @@ getRandomCocktail();
 
 /* Black-Overlay */
 .Black-Overlay{
-  position: absolute;
+  position: fixed;
   left: 0;
   right: 0;
-  width: 100%;
-  height: 100%;
+  top: 0;
+  width: 100em;
+  height: 100em;
   background: rgba(0, 0, 0, .7);
 }
 
@@ -442,26 +446,30 @@ getRandomCocktail();
 
 /*--------------------------------------------------- Ingredient Display -------------------------------------------*/
 .Input-Ingredient-Display{
-  height: auto;
+  height: fit-content;
   color: white;
   border-radius: 1em;
   width: 95%;
   margin: 7em auto 0 auto;
-  padding: 1em;
+  padding: .5em;
+  box-sizing: content-box;
+  overflow: hidden;
   background: linear-gradient(30deg, #F166B3, #6254C9);
 }
 
 .Ingredient-Display{
-  height: 25em;
+  object-fit: contain;
+  max-height: 20em;
   border: 1px white solid;
-  width: 35em;
   margin: 1em auto;
   border-radius: 1em;
-  padding: 1.2em;
+  padding: 1em;
   display: grid;
   grid-template-columns: 50% 50%;
-  gap: .3em;
+  gap: .2em;
   box-shadow: inset 0 0 1em #000000;
+  justify-content: center;
+  text-align: center;
   background-color: #2C2C2C;
   overflow-x: hidden;
   overflow-y: scroll;
@@ -636,6 +644,115 @@ label{
   100% {
     transform: scale(1);
   }
+}
+
+
+
+
+
+
+@media screen and (min-width: 0) and (max-width: 550px){
+  .Content{
+    display: block;
+  }
+
+
+  .Specific-Drink-Info-Display{
+    background: linear-gradient(30deg, #F166B3, #6254C9);
+    width: 80%;
+    top: 6em;
+    height: 30em;
+    margin-left: auto;
+    margin-right: auto;
+    position: fixed;
+    left: 0;
+    right: 0;
+    color: white;
+    border-radius: 1em;
+    text-align: center;
+    z-index: 30;
+    justify-content: center;
+
+  }
+
+  .Specific-Drink-Info-Display h1{
+    font-size: 1em;
+  }
+
+  .Specific-Drink-Info{
+    display: block;
+    width: 100%;
+    height: 25em;
+    margin: 1em auto;
+  }
+
+  .Specific-Drink-Image{
+    width: 100%;
+    height: auto;
+    margin:  0 auto;
+  }
+
+  .Specific-Drink-Image img{
+    width: 30%;
+    height: auto;
+    margin-top: 1em;
+    border-radius: 1em;
+    box-shadow: 6px 6px 8px #171717;
+  }
+
+  .Specific-Drink-Ingredients{
+    display: grid;
+    grid-template-columns: 49% 49%;
+    width: 90%;
+    gap: .3em;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    height: 10em;
+    margin: 0 auto;
+
+  }
+
+  .Specific-Drink-Ingredients::-webkit-scrollbar{
+    width: .7em;
+    box-shadow: inset 0 0 3px #000000;
+    border-radius: 3px;
+  }
+
+  .Specific-Drink-Ingredients::-webkit-scrollbar-thumb{
+    background-color: white;
+    border-radius: 3px;
+  }
+
+  .Specific-Ingredients{
+    border: 1px white solid;
+    border-radius: 1em;
+    max-height: 5em;
+  }
+
+  .Specific-Ingredients h2{
+    margin-bottom: 0;
+    font-size: .8em;
+  }
+
+  .Specific-Ingredients p {
+    margin-top: .2em;
+  }
+
+  .Specific-Drink-Instructions{
+    width: 90%;
+    margin: 0 auto;
+    font-size: .8em;
+    text-align: center;
+  }
+
+
+
+
+
+  .List-Of-Drinks-Display{
+    margin-top: 2em;
+  }
+
 }
 
 </style>

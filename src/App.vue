@@ -11,10 +11,6 @@ onAuthStateChanged(getAuth(),()=>{
 });
 
 
-
-
-
-
 let sideMenu = ref(false);
 
 
@@ -52,21 +48,21 @@ let sideMenu = ref(false);
     </div>
 
 
-
-    <div  class="phoneSideBar" :class="sideMenu && 'slideAnimation'" >
-      <div id="phoneMenuOptions">
-        <RouterLink @click="sideMenu = !sideMenu" to="/" id="homeMenu"><h3>Home</h3></RouterLink>
-        <RouterLink @click="sideMenu = !sideMenu" to="/browseCocktails"><h3>Browse Cocktails</h3></RouterLink>
-        <RouterLink @click="sideMenu = !sideMenu" to="/socialHub"><h3>Social Hub</h3></RouterLink>
-        <div v-if="!signedIn">
-          <RouterLink @click="sideMenu = !sideMenu" to="/signIn"><h3>Log In</h3></RouterLink>
-        </div>
-        <div v-else>
-          <RouterLink @click="sideMenu = !sideMenu" to="/account"><h3>Account</h3></RouterLink>
-        </div>
-      </div>
-
+  <Transition name="bounce">
+    <div  class="phoneSideBar" v-if="sideMenu" >
+          <div id="phoneMenuOptions">
+            <RouterLink @click="sideMenu = !sideMenu" to="/" id="homeMenu"><h3>Home</h3></RouterLink>
+            <RouterLink @click="sideMenu = !sideMenu" to="/browseCocktails"><h3>Browse Cocktails</h3></RouterLink>
+            <RouterLink @click="sideMenu = !sideMenu" to="/socialHub"><h3>Social Hub</h3></RouterLink>
+            <div v-if="!signedIn">
+              <RouterLink @click="sideMenu = !sideMenu" to="/signIn"><h3>Log In</h3></RouterLink>
+            </div>
+            <div v-else>
+              <RouterLink @click="sideMenu = !sideMenu" to="/account"><h3>Account</h3></RouterLink>
+            </div>
+          </div>
     </div>
+  </Transition>
 
   </div>
 
@@ -149,7 +145,7 @@ a{
   }
 
   #phoneNavBar{
-
+    margin-bottom: 0;
     height: 5em;
     background-color: rgba(0, 0, 0, .5);
     justify-content: center;
@@ -179,18 +175,11 @@ a{
     height: 100%;
     z-index: 100;
     margin: 0 auto;
-    right: -30em;
+    right: -1em;
     color: white;
   }
 
-  .slideAnimation{
-    animation: slideInMenu .5s ease-in-out forwards;
-  }
 
-  @keyframes slideInMenu {
-    from{right: -29em;}
-    to{right: -1em;}
-  }
 
   a h3{
     color: white;
@@ -233,6 +222,25 @@ a{
   }
 
 
+  @keyframes slideInLeft {
+    0%{
+      right: -30em;
+    }
+    50%{
+      right: 0;
+    }
+    100%{
+      right: -1em;
+    }
+  }
+
+  /*Animations*/
+  .bounce-enter-active {
+    animation: slideInLeft ease-in-out .5s forwards;
+  }
+  .bounce-leave-active {
+    animation: slideInLeft ease-in-out .5s reverse;
+  }
 }
 
 
