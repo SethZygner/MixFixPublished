@@ -1,0 +1,30 @@
+{
+  "name": "mixfix",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 5050"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.1.1",
+    "@fortawesome/free-brands-svg-icons": "^6.1.1",
+    "@fortawesome/free-regular-svg-icons": "^6.1.1",
+    "@fortawesome/free-solid-svg-icons": "^6.1.1",
+    "@fortawesome/vue-fontawesome": "^3.0.0-5",
+    "bad-words": "^3.0.4",
+    "firebase": "^9.8.2",
+    "js-quantities": "^1.7.6",
+    "units-converter": "^1.0.3",
+    "vue": "^3.2.33",
+    "vue-carousel": "^0.18.0",
+    "vue-picture-input": "^2.4.0",
+    "vue-router": "^4.0.14",
+    "vue3-carousel": "^0.1.40",
+    "vue3-slider": "^1.7.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^2.3.1",
+    "vite": "^2.9.5"
+  }
+}
