@@ -48,7 +48,8 @@ onAuthStateChanged(getAuth(), ()=>{
   getUserInfo.child("users").get()
       .then((snapshot)=>{
         snapshot.forEach((user)=>{
-          if(user.key === getAuth().currentUser.uid){
+
+          if(user.key === getAuth().currentUser.uid && getAuth().currentUser){
             UserInfo.push(user.val());
             console.log(UserInfo)
             return 0;

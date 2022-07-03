@@ -20,6 +20,7 @@ let showSpecificDrinkInfo = ref(false);
 let showInstructions = ref(false);
 let shownRandom = ref(0);
 let enteredIngredient = ref("");
+let doesNotExist = ref(false);
 
 
 //Arrays
@@ -98,6 +99,7 @@ function cleanAPIObjects(uncleanData){
 } //Gets rid of unnecessary keys with null or empty values and makes categories for drink information
 
 function getListOfDrinks(action){
+  doesNotExist.value = false;
   //Removes random drink from display and clears list of drinks
   listOfDrinks.length = 0;
   randomRewind.length = 0;
@@ -125,7 +127,6 @@ function getListOfDrinks(action){
   }
 
 
-
   //A function to get the drinks from the API
   function getDrinks(urlAddon){
     let url = multipleIngredientUrl+urlAddon;
@@ -136,13 +137,18 @@ function getListOfDrinks(action){
       })
       .then((Data)=>{
 
-        //Populate the list of drinks
-        for(let i of Data.drinks){
-          listOfDrinks.push(i);
+        if(Data.drinks === 'None Found'){
+          doesNotExist.value = true;
+        }else{
+          //Populate the list of drinks
+          for(let i of Data.drinks){
+            listOfDrinks.push(i);
+          }
         }
 
       })
       .catch((err)=>{
+        listOfDrinks.length = 0;
         alert("There seems to be a problem: " + err.message+". Refresh your browser or try again!");
       })
   }
@@ -277,8 +283,8 @@ getRandomCocktail();
       <div v-if="listOfDrinks.length !== 0" class="List-Of-Drinks-Display">
         <div class="List-Of-Drinks">
           <div @click="clickOnSpecificDrink(drink.idDrink)" v-if="listOfDrinks.length !== 0" v-for="drink in listOfDrinks" class="Drink-Item">
-            <p :class="drink.strDrink.length > 30 && 'MakeTextSmaller'">{{drink.strDrink}}</p>
-            <img :src="drink.strDrinkThumb" alt="">
+            <p v-if="drink.strDrink" :class="drink.strDrink.length > 30 && 'MakeTextSmaller'">{{drink.strDrink}}</p>
+            <img v-if="drink.strDrinkThumb" :src="drink.strDrinkThumb" alt="">
           </div>
         </div>
       </div>
@@ -307,6 +313,10 @@ getRandomCocktail();
 
           </div>
         </div>
+      </div>
+
+      <div style="color: white; margin-top: 20em;" v-if="doesNotExist">
+        <h2>That doesn't exist!</h2>
       </div>
 
     </div> <!--Ending of Web-Content-->
