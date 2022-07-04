@@ -298,17 +298,15 @@ getRandomCocktail();
             <img @click="clickOnSpecificDrink(randomRewind[shownRandom].idDrink)" :src="randomRewind[shownRandom].strDrinkThumb" alt="">
             <br>
             <div class="Random-Buttons">
-              <div>
-                <img alt="" src="../assets/Icons/FastForward.png" id="Rewind" v-if="randomRewind.length === 2 && shownRandom === 0" @click="shownRandom = 1">
-              </div>
-
-              <div>
-                <button @click="getRandomCocktail">Random Cocktail</button>
-              </div>
-
-              <div>
-                <img id="FastForward" src="../assets/Icons/FastForward.png" alt="" v-if="randomRewind.length === 2 && shownRandom === 1" @click="shownRandom = 0">
-              </div>
+                <div>
+                  <img alt="" src="../assets/Icons/FastForward.png" id="Rewind" v-if="randomRewind.length === 2 && shownRandom === 0" @click="shownRandom = 1">
+                </div>
+                <div>
+                  <button @click="getRandomCocktail">Random Cocktail</button>
+                </div>
+                <div>
+                  <img id="FastForward" src="../assets/Icons/FastForward.png" alt="" v-if="randomRewind.length === 2 && shownRandom === 1" @click="shownRandom = 0">
+                </div>
 
             </div>
 
@@ -414,13 +412,13 @@ getRandomCocktail();
 
 }
 
-.Specific-Drink-Ingredients::-webkit-scrollbar{
+.Specific-Drink-Ingredients::-webkit-scrollbar, .Specific-Drink-Instructions::-webkit-scrollbar{
   width: .7em;
   box-shadow: inset 0 0 3px #000000;
   border-radius: 3px;
 }
 
-.Specific-Drink-Ingredients::-webkit-scrollbar-thumb{
+.Specific-Drink-Ingredients::-webkit-scrollbar-thumb, .Specific-Drink-Instructions::-webkit-scrollbar-thumb{
   background-color: white;
   border-radius: 3px;
 }
@@ -441,6 +439,9 @@ getRandomCocktail();
 
 .Specific-Drink-Instructions{
   width: 90%;
+  height: 15em;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 
@@ -549,6 +550,8 @@ getRandomCocktail();
   border-radius: 1em;
   width: 98%;
   background: linear-gradient(30deg, #F166B3, #6254C9);
+  text-align: center;
+  justify-content: center;
 
 }
 
@@ -557,7 +560,7 @@ getRandomCocktail();
 }
 
 .Random-Cocktail img{
-  width: 25em;
+  width: 90%;
   height: auto;
   border-radius: 1em;
 }
@@ -568,8 +571,12 @@ getRandomCocktail();
 
 .Random-Cocktail button{
   height: 3em;
-  width: 12em;
-  margin: 0 auto;
+  width: 80%;
+  margin: 0 auto 1em auto;
+  border-radius: 1em;
+  border: none;
+  text-align: center;
+
 }
 
 .Random-Cocktail h1{
@@ -581,7 +588,10 @@ getRandomCocktail();
   width: 90%;
   margin: .5em auto 0 auto;
   grid-template-columns: 33.3333% 33.3333% 33.3333%;
+  justify-content: center;
+  text-align: center;
 }
+
 
 #Rewind, #FastForward{
   width: 3em;
@@ -589,12 +599,8 @@ getRandomCocktail();
 
 #Rewind{
   transform: scale(-1);
-  float: left;
 }
 
-#FastForward{
-  float: right;
-}
 
 
 /*--------------------------------------------------- Inputs -----------------------------------------------------*/
@@ -651,7 +657,7 @@ label{
 
 
 
-@media screen and (min-width: 0) and (max-width: 550px){
+@media screen and (min-width: 0) and (max-width: 600px){
   .Content{
     display: block;
   }
@@ -748,9 +754,49 @@ label{
 
 
 
-
   .List-Of-Drinks-Display{
-    margin-top: 2em;
+    margin: 2em auto 0 auto;
+    height: 35em;
+    width: 98%;
+    overflow-y: scroll;
+    overflow-x: hidden;
+  }
+
+  .List-Of-Drinks-Display::-webkit-scrollbar{
+    width: .7em;
+    box-shadow: inset 0 0 3px #000000;
+    border-radius: 3px;
+  }
+
+  .List-Of-Drinks-Display::-webkit-scrollbar-thumb{
+    background: linear-gradient(30deg, #F166B3, #6254C9);
+    border-radius: 3px;
+  }
+
+  .List-Of-Drinks{
+    display: grid;
+    grid-template-columns: 50% 50%;
+    row-gap: 1em;
+    width: 95%;
+    margin: 0 auto;
+  }
+
+  .Drink-Item{
+    background: linear-gradient(30deg, #F166B3, #6254C9);
+    width: 95%;
+    height: 15em;
+    border-radius: 1em;
+    color: white;
+  }
+
+  .Drink-Item img{
+    width: 90%;
+    height: auto;
+    border-radius: 1em;
+  }
+
+  .Drink-Item:hover{
+    cursor: pointer;
   }
 
 }

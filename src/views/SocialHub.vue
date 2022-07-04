@@ -300,8 +300,11 @@
       </div>
     </div>
 
-    <div v-else style="color: white;">
-      <h2>Sign Up</h2>
+    <div v-else class="SignUpWarning" style="color: white;">
+      <h2>Sign Up!</h2>
+      <p>Create, save, and explore new drinks!<br>
+      Gain access to free tools.
+      </p>
     </div>
 
 
@@ -537,6 +540,95 @@
   100% {
     transform: scale(1);
   }
+}
+
+
+
+
+@media screen and (min-width: 0) and (max-width: 600px){
+
+
+  .All-Content{
+    width: 100%;
+    display: block;
+  }
+
+
+  .Show-Drinks{
+    display: grid;
+    grid-template-columns: 50% 50%;
+    min-height: 20em;
+  }
+
+  .User-Drink{
+    border: 1px white solid;
+    max-height: 10em;
+    overflow: hidden;
+  }
+
+  .User-Drink p{
+    font-size: .8em;
+  }
+
+
+  .User-Drink img{
+    max-width: 80%;
+    max-height: 4em;
+
+  }
+
+  .ABV{
+    margin: .1em auto 0 auto;
+  }
+
+
+  .DrinkDisplay{
+    height: 30em;
+  }
+
+  .DrinkDisplay h2, .DrinkDisplay h3{
+    font-size: .9em;
+  }
+
+
+  .DrinkDisplay p{
+    font-size: .8em;
+  }
+
+
+
+  .DrinkInformation{
+    display: block;
+    box-sizing: border-box;
+    padding: 1em;
+  }
+
+
+
+  .DrinkInformation img{
+    width: 75%;
+    height: auto;
+    border-radius: 1em;
+    border: 2px white solid;
+  }
+
+
+  .Ingredients{
+    height: 9em;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+
+  .Ingredient{
+    border: 1px white solid;
+    border-radius: 1em;
+    height: 5em;
+    width: 80%;
+    margin: 0 auto;
+  }
+
 }
 
 </style>

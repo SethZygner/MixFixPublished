@@ -123,13 +123,13 @@ onAuthStateChanged(getAuth(), ()=>{
 #features{
   display: grid;
   grid-template-columns: 33.33% 33.33% 33.33%;
-  width: 90%;
+  width: 100%;
   margin: 0 auto;
 }
 
 #SocialHub, #BrowseCocktails, #SignUp, #account{
-  width: 25em;
-  height: 21em;
+  width: 75%;
+  aspect-ratio: 1/1;
   border: 1px black solid;
   margin: 5em auto;
   border-radius: 10px;
@@ -209,18 +209,18 @@ button:hover{
     display: block;
   }
 
-  #SocialHub, #BrowseCocktails, #SignUp, #account{
-    width: 20em;
-    height: 20em;
-    border: 1px black solid;
-    margin: 5em auto;
-    border-radius: 10px;
-    overflow: hidden;
-    color: white;
-    text-align: center;
-    position: relative;
-    background: linear-gradient(30deg, #F166B3, #6254C9);
+  .overlay div{
+    margin-top: 2em;
+    padding: .5em;
   }
+
+ .overlay div h3{
+    font-size: .9em;
+  }
+
+ .overlay div h2{
+   font-size: 1em;
+ }
 }
 
 </style>
