@@ -227,7 +227,7 @@ a{
       right: -30em;
     }
     50%{
-      right: 0;
+      right: 1em;
     }
     100%{
       right: -1em;
@@ -236,10 +236,10 @@ a{
 
   /*Animations*/
   .bounce-enter-active {
-    animation: slideInLeft ease-in-out .5s forwards;
+    animation: slideInLeft  .5s forwards;
   }
   .bounce-leave-active {
-    animation: slideInLeft ease-in-out .5s reverse;
+    animation: slideInLeft  .5s reverse;
   }
 }
 

@@ -6,6 +6,9 @@ import {useRouter} from "vue-router";
 import {ref as fireRef} from "firebase/database";
 import firebase from "firebase/compat";
 import {getAuth} from "firebase/auth";
+import {Swiper, SwiperSlide} from "swiper/vue";
+import 'swiper/css';
+import Vue3TouchEvents from "vue3-touch-events";
 import { getStorage, ref as StorageRef, uploadBytes } from "firebase/storage";
 
 
@@ -27,6 +30,8 @@ let Alcoholic = ref(false);
 let Coins = ref(0);
 let drinkImage = ref();
 let displayImage = ref();
+
+let editItem = ref(false);
 
 //General Info
 let DrinkName = ref("");
@@ -85,7 +90,7 @@ function validateIngredient(){
 
 //Add the ingredient to the list of Ingredients as an object
 function addIngredient(){
-
+  editItem.value = false;
 
 //If the ingredient is alcoholic, then these fields MUST be filled out to get the ABV
   if(validateIngredient() && DrinkIngredients.length <= 15){
@@ -129,7 +134,7 @@ function removeIngredient(index){
 function editIngredient(index){
   //Gets the ingredient the user wants to edit
   let editedIngredient = DrinkIngredients[index];
-
+  editItem.value = true;
   //This section populates all the inputs of what the user wanted to edit
   Ingredient.value = editedIngredient.Ingredient;
   Measurement.value = editedIngredient.Measurement;
@@ -342,6 +347,66 @@ function showImageToUpload(event){
 
   </div>
 
+
+  <div class="Phone-Display">
+      <Swiper style="margin-top: 7em;" :slides-per-view="1">
+        <SwiperSlide>
+          <div class="Phone-Ingredient-Display">
+            <input v-model="DrinkName"  class="Phone-Input" type="text" placeholder="Drink Name">
+            <textarea v-model="Description" class="Phone-Instructions" placeholder="Instructions"/>
+            <div v-if="!displayImage">
+              <label class="Label" for="file">Choose an Image</label>
+              <input id="file" class="File-Input" type="file" @change="showImageToUpload" accept="image/*">
+            </div>
+            <img :src="displayImage" v-if="displayImage" alt="">
+            <button v-if="displayImage" @click="displayImage = ''" class="Delete-Image">Delete Image</button>
+          </div>
+        </SwiperSlide>
+        <SwiperSlide>
+          <div class="Phone-Ingredient-Display">
+            <input v-model="Ingredient" class="Phone-Input" type="text" placeholder="Ingredient">
+            <p>Measurement:</p>
+            <div class="Phone-Measurement-Input">
+
+              <input type="number" placeholder="Amount" v-model="Measurement">
+              <select v-model="Unit">
+                <option></option>
+                <option>cup</option>
+                <option>fl-oz</option>
+                <option>ml</option>
+                <option>dash</option>
+              </select>
+              <div style="margin-left: .5em;  justify-content: center; text-align: center">
+                <p style="margin: 0;">Alcoholic</p>
+                <div style=" margin: 0 auto; height: 1em; aspect-ratio: 1/1; border: 1px black solid;" @click="Alcoholic = !Alcoholic" :class="Alcoholic && 'Clicked-Check-Box'" ></div>
+              </div>
+            </div>
+            <div class="Phone-Alcoholic-Menu" v-if="Alcoholic">
+              <input v-model="Percent" type="number" placeholder="ABV/Proof">
+              <select v-model="PercentOrProof">
+                <option>Proof</option>
+                <option>%</option>
+              </select>
+            </div>
+            <div class="Phone-Ingredient-Box">
+                <div class="Phone-Ingredient" v-if="DrinkIngredients.length" v-for="item in DrinkIngredients">
+                  <div class="Phone-Ingredient-Item" @click="editIngredient(DrinkIngredients.indexOf(item))">
+                    <p >{{item.Ingredient}}<span v-if="item.Percent">({{item.Percent+item.PercentOrProof}})</span></p>
+                  </div>
+                </div>
+            </div>
+            <button @click="addIngredient">Add Ingredient</button>
+
+          </div>
+        </SwiperSlide>
+        <SwiperSlide>
+          <div class="Phone-Ingredient-Display">
+            <button @click="postDrink">Post</button>
+          </div>
+        </SwiperSlide>
+      </Swiper>
+  </div>
+
 </template>
 
 
@@ -349,6 +414,10 @@ function showImageToUpload(event){
 
 <style scoped>
 
+
+.Phone-Display{
+  display: none;
+}
 
 /*All Content*/
 .New-Drink-Display{
@@ -507,6 +576,128 @@ textarea{
     border: none;
     background: linear-gradient(30deg, #F166B3, #6254C9);
   }
+}
+
+
+@media screen and (min-width: 0) and (max-width: 600px){
+  .Phone-Display{
+  display: contents;
+  }
+
+  .New-Drink-Display{
+    display: none;
+  }
+
+
+  .Phone-Ingredient-Display{
+    width: 90%;
+    height: 33em;
+    margin: 0 auto;
+    border-radius: 1em;
+    justify-content: center;
+    text-align: center;
+    padding: 1em;
+    box-sizing: border-box;
+    background: white;
+  }
+
+
+  .Phone-Input{
+    width: 90%;
+    text-align: center;
+    height: 3em;
+    border-radius: 1em;
+    border: 1px black solid;
+
+  }
+
+
+
+  .Phone-Instructions{
+    resize: none;
+    width: 85%;
+    height: 5em;
+    margin-bottom: 1em;
+  }
+
+  .File-Input {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+  }
+
+  .Label, .Delete-Image{
+    width: 50%;
+    color: white;
+    font-size: .8em;
+    background: linear-gradient(30deg, #F166B3, #6254C9);
+    padding: 1em;
+    border-radius: 1em;
+    display: block;
+    margin: 0 auto;
+    border: none;
+  }
+
+  .Phone-Ingredient-Display p{
+    margin: 1em auto .2em auto;
+  }
+
+
+  .Phone-Ingredient-Display img{
+    width: 50%;
+    max-height: 14em;
+    border-radius: 1em;
+    border: 1px black solid;
+  }
+
+  .Phone-Ingredient-Box{
+    width: 95%;
+    height: 14em;
+    margin: 1em auto;
+    box-shadow: inset 0 0 7px #000000;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .Phone-Measurement-Input, .Phone-Alcoholic-Menu{
+    display: inline-flex;
+    margin: 0 auto 0 auto;
+    justify-content: center;
+    height: 2.5em;
+
+  }
+
+  .Phone-Measurement-Input input{
+    width: 20%;
+  }
+
+  .Phone-Alcoholic-Menu{
+    margin-top: 1em;
+  }
+
+  .Phone-Ingredient-Item{
+    color: white;
+    height: auto;
+    padding: .4em;
+    width: 90%;
+    box-sizing: border-box;
+    margin: .5em auto 0 auto;
+    text-align: center;
+    justify-content: center;
+    border-radius: 5px;
+    background: linear-gradient(30deg, #F166B3, #6254C9);
+  }
+
+  .Phone-Ingredient-Item p{
+    margin: 0;
+  }
+
+
 }
 
 
