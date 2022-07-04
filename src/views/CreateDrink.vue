@@ -3,12 +3,10 @@ import {reactive, ref} from "vue";
 import * as Converter from 'units-converter';
 import fire from '../../Firebase.js';
 import {useRouter} from "vue-router";
-import {ref as fireRef} from "firebase/database";
 import firebase from "firebase/compat";
 import {getAuth} from "firebase/auth";
 import {Swiper, SwiperSlide} from "swiper/vue";
 import 'swiper/css';
-import Vue3TouchEvents from "vue3-touch-events";
 import { getStorage, ref as StorageRef, uploadBytes } from "firebase/storage";
 
 
@@ -27,10 +25,9 @@ let Ingredient = ref("");
 let Measurement = ref(null);
 let Unit = ref("fl-oz");
 let Alcoholic = ref(false);
-let Coins = ref(0);
 let drinkImage = ref();
 let displayImage = ref();
-
+let popUp = ref("");
 let editItem = ref(false);
 
 //General Info
@@ -52,7 +49,6 @@ fire.onAuthStateChanged(fire.getAuth(), ()=>{
           snapshot.forEach((user)=>{
             if(user.key === getAuth().currentUser.uid){
               UserInfo.push(user.val());
-              Coins.value = UserInfo[0].Coins
 
               return 0;
             }
@@ -68,20 +64,23 @@ function validateIngredient(){
 
   let valid = true;
   //First, make sure everything in the non-Alc is proper
-  if(Ingredient.value.trim() && Measurement.value && Measurement.value >= 0){
+  if(Ingredient.value.trim() && Measurement.value >= 0 && Measurement.value <= 900){
 
     if(Alcoholic.value){
-      if(Percent.value && PercentOrProof.value && Unit.value && Percent.value >=0 ){
-
-      }else{
-        alert("Please complete the required fields (Percent/Proof, %/Proof Dropdown, Unit)");
+      if(!Percent.value && !PercentOrProof.value && !Unit.value && !Percent.value >=0 ){
         valid = false;
+        popUp.value = "Looks like you forgot the Unit, ABV/Proof, or the %/Proof fields!";
       }
     }
 
   }else{
     valid = false;
-    alert("Please complete the required fields (Ingredient and a Measurement) and make sure there isn't any negative numbers or 0's");
+    if(!Ingredient.value.trim()){
+      popUp.value = "Be sure to enter the name of the ingredient";
+    }else{
+      popUp.value = "Measurement can only be 0-900";
+    }
+
   }
 
   return valid;
@@ -92,31 +91,35 @@ function validateIngredient(){
 function addIngredient(){
   editItem.value = false;
 
-//If the ingredient is alcoholic, then these fields MUST be filled out to get the ABV
-  if(validateIngredient() && DrinkIngredients.length <= 15){
-    //Object of ingredient
-    DrinkIngredients.push({
-      Ingredient: Ingredient.value,
-      Measurement: Measurement.value,
-      ...Unit.value !== "" &&{
-        Unit: Unit.value
-      },
-      Alcoholic: Alcoholic.value,
-      ...Alcoholic.value === true && {
-        Percent: Percent.value,
-        PercentOrProof: PercentOrProof.value
+  if(DrinkIngredients.length <= 15){
+    //If the ingredient is alcoholic, then these fields MUST be filled out to get the ABV
+    if(validateIngredient()){
+      //Object of ingredient
+      DrinkIngredients.push({
+        Ingredient: Ingredient.value,
+        Measurement: Measurement.value,
+        ...Unit.value !== "" &&{
+          Unit: Unit.value
+        },
+        Alcoholic: Alcoholic.value,
+        ...Alcoholic.value === true && {
+          Percent: Percent.value,
+          PercentOrProof: PercentOrProof.value
+        }
+      });
+      //Gets the ABV
+      if(Unit.value !== "splash"){
+        getABV();
       }
-    });
-    //Gets the ABV
-    if(Unit.value !== "splash"){
-      getABV();
-    }
 
-    //Clears all inputs
-    clearAllFields();
+      //Clears all inputs
+      clearAllFields();
+    }
   }else{
-    alert("Only 2-15 ingredients are allowed in a single drink");
+    popUp.value = "Custom drinks must have only 2-15 ingredients total!"
   }
+
+
 
 }
 
@@ -215,26 +218,30 @@ function postDrink(){
 
   DrinkInformation.length = 0;
 
-  if(DrinkName.value.length >= 3 && DrinkIngredients.length >= 2 || DrinkIngredients <= 15 && Description.value){
-    fire.database().ref('users/'+getAuth().currentUser.uid).get()
-    .then((result)=>{
-      DrinkInformation.push({
-        DrinkName: DrinkName.value,
-        ABV: ABV.value,
-        Description: Description.value,
-        UserID: fire.getAuth().currentUser.uid,
-        Username: result.val().Username,
-        ...drinkImage.value && {
-          Image: drinkImage.value
-        }
-      })
-      DrinkInformation.push(DrinkIngredients);
-      fire.newDrink(DrinkInformation);
-      router.push('/socialHub');
-    })
+  if(DrinkName.value.trim()){
+    if(Description.value.trim()){
+      fire.database().ref('users/'+getAuth().currentUser.uid).get()
+          .then((result)=>{
+            DrinkInformation.push({
+              DrinkName: DrinkName.value,
+              ABV: ABV.value,
+              Description: Description.value,
+              UserID: fire.getAuth().currentUser.uid,
+              Username: result.val().Username,
+              ...drinkImage.value && {
+                Image: drinkImage.value
+              }
+            })
+            DrinkInformation.push(DrinkIngredients);
+            fire.newDrink(DrinkInformation);
+            router.push('/socialHub');
+          })
+    }else{
+      popUp.value = "Don't forget a description or instructions for your drink!"
+    }
 
   }else{
-    alert("Make sure you have entered 2-15 ingredients and there is a name and a description")
+    popUp.value = "Must enter a name for your awesome drink! (It must be at LEAST 3 or more characters)";
   }
 
 }
@@ -253,12 +260,22 @@ function showImageToUpload(event){
 
 
 
+
 </script>
 
 
 
 
 <template>
+
+
+  <div v-if="popUp" class="Error-Pop-Up">
+    <p>{{popUp}}</p>
+    <button @click="popUp = ''">Close</button>
+  </div>
+
+
+
   <div class="New-Drink-Display">
 
     <div class="Menu-Display">
@@ -414,6 +431,22 @@ function showImageToUpload(event){
 
 <style scoped>
 
+.Error-Pop-Up{
+  position: fixed;
+  top: 15em;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  height: 10em;
+  width: 95%;
+  background: rgba(0, 0, 0, .8);
+  z-index: 10;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  border-radius: 1em;
+}
 
 .Phone-Display{
   display: none;
