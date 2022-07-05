@@ -28,10 +28,7 @@
   //Initialized booleans
 
   let signedIn = ref(false);
-  //Makes sure the user is signed in before they may use features
-  if(getAuth().currentUser){
-    signedIn.value = true;
-  }
+
   let IsError = ref(false); //True if there is any error with the firebase calls
 
 
@@ -176,7 +173,7 @@
   onAuthStateChanged(getAuth(), ()=>{
 
     if(getAuth().currentUser){
-
+      signedIn.value = true;
       //Makes sure userInfo is empty
       UserInfo.length = 0;
 
@@ -410,6 +407,8 @@
   padding: 1em 1em 10em 1em;
   color: white;
   gap: 1em;
+  justify-content: center;
+  text-align: center;
 
 }
 
@@ -493,7 +492,6 @@
 .Ingredients{
   display: grid;
   grid-template-columns: 50% 50%;
-  gap: 1em;
 }
 
 .Ingredient{
@@ -505,9 +503,10 @@
 /*--------------------------------------------------- Misc ----------------------------------------------------------*/
 
 .Black-Overlay{
-  position: absolute;
+  position: fixed;
   left: 0;
   right: 0;
+  top: 0;
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, .7);
@@ -607,7 +606,7 @@
 
   .DrinkInformation img{
     width: 75%;
-    height: auto;
+    max-height: 13em;
     border-radius: 1em;
     border: 2px white solid;
   }
