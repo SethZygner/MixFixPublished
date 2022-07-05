@@ -234,8 +234,11 @@ function postDrink(){
             })
             DrinkInformation.push(DrinkIngredients);
             fire.newDrink(DrinkInformation);
-            router.push('/socialHub');
+
           })
+      .then(()=>{
+        router.push('/socialHub');
+      })
     }else{
       popUp.value = "Don't forget a description or instructions for your drink!"
     }
