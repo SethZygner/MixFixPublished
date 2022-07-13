@@ -8,8 +8,6 @@ import firebase from "firebase/compat";
 window.scrollTo(0, 0);
 
 
-let arr = reactive([]);
-
 
 let router = useRouter();
 let loading = ref(false);
@@ -31,16 +29,12 @@ function signOut(){
   }catch(err){
     alert(err.message)
   }
-
 }
-
 
 function getSpecificDrink(index){
   clickedDrink.length = 0;
   clickedDrink.push(...index);
-  console.log(clickedDrink);
 }
-
 
 onAuthStateChanged(getAuth(), ()=>{
 
@@ -99,10 +93,12 @@ onAuthStateChanged(getAuth(), ()=>{
 
 
 
+
+
+
   <div v-if="UserInfo.length"  class="All-Content">
 
     <div style="display: block; clear:both; box-sizing: border-box" >
-
       <div  class="Profile-Heading">
         <h1>{{UserInfo[0].Username}}</h1>
         <button @click="signOut">Sign Out</button>
@@ -136,7 +132,13 @@ onAuthStateChanged(getAuth(), ()=>{
 
     </div>
 
+
+
   </div>
+
+
+
+
 
 </template>
 

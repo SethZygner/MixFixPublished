@@ -15,7 +15,6 @@ const getByIdURL = "https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=";
 
 
 //I/O Refs
-let showListOfDrinks = ref(false); //Shows a display if drinks when ingredients are entered
 let showSpecificDrinkInfo = ref(false);
 let showInstructions = ref(false);
 let shownRandom = ref(0);

@@ -8,28 +8,17 @@
   import {getAuth, onAuthStateChanged} from "firebase/auth"; //Authentication import
   import {onValue, ref as fireRef} from "firebase/database"; //Firebase Database import
   import firebase from "firebase/compat";
-
-  //Vue Imports
   import {reactive, ref} from "vue"; //Reactive and Ref import
   import {useRouter} from "vue-router"; //Router import to switch between routes
 
-  //3rd Party npm imports
-  import FilterBadWords from 'bad-words';
 
 
   //Initialized Simple Refs
   let message = ref("");
   let FilterByPercentBottom = ref(0);
-  let errorMessage = ref("");
   let Favorite = ref(false);
   let IsUsers = ref(false);
-
-
-  //Initialized booleans
-
   let signedIn = ref(false);
-
-  let IsError = ref(false); //True if there is any error with the firebase calls
 
 
   //Initialized arrays
@@ -54,14 +43,16 @@
   function FilterByPercent(){
 
     Drinks.forEach((drink)=>{
+
+      //Shorthand for drink.DrinkInfo[0] which accesses the general information within each drink
       let DrinkInfo = drink.DrinkInfo[0];
 
+      //If the percent matches the criteria, then it will only show those that match
       if(DrinkInfo.ABV.toFixed(0) <= FilterByPercentBottom.value){
         FilteredDrinks.push(drink);
       }
 
     });
-    console.log(FilteredDrinks)
   } //Filter drinks by percent
 
   function ClearFilters(){
@@ -117,23 +108,6 @@
 
   } //Fills the 'clickedDrink' array with the information of the specific drink clicked and checks if the drink has been liked or not
 
-  function errorFunction(code){
-    IsError.value = true;
-    switch (code){
-      case 404:
-        errorMessage.value = "Source not found";
-        break;
-
-      case 400:
-        errorMessage.value = "Bad Request";
-        break;
-
-      case 500:
-        errorMessage.value = "Server Error";
-        break;
-    }
-  } //Sends the error code for which the error is
-
   function AddToFavorites(){
     Favorite.value = true;
     fire.AddToUserDrinkFavorites(clickedDrink[0]);
@@ -153,8 +127,6 @@
       Posts.push(post.val());
     })
 
-  }, (error)=>{
-    errorFunction(error.code);
   }); //This gets all posts from firebase
 
   onValue(PublicDrinks, (snapshot) => {
@@ -166,8 +138,6 @@
         DrinkID: drink.key
     })
     });
-  }, (error)=>{
-    errorFunction(error.code);
   }); //Gets all public drinks
 
   onAuthStateChanged(getAuth(), ()=>{
@@ -179,9 +149,16 @@
 
       //Gets the user information
       const getUserInfo = firebase.database().ref();
+
+      //Goes into the Users tree of realtime database
       getUserInfo.child("users").get()
+
       .then((snapshot)=>{
+
+        //For each user, check if the current user ID matches
         snapshot.forEach((user)=>{
+
+          //Once the User ID matches, push all that user's information into UserInfo
           if(user.key === getAuth().currentUser.uid){
             UserInfo.push(user.val());
             return 0;
@@ -190,7 +167,6 @@
       })
     }
   }); //Checks to see if the user is signed in or not
-
 
 </script>
 
@@ -205,17 +181,13 @@
 
 <!---------------------------------------------------- Misc -------------------------------------------------------->
 
-  <div v-if="IsError" class="error">
-    <h1>ERROR</h1>
-    <h3>{{errorMessage}}</h3>
-  </div>
 
   <div @click="clickedDrink.length = 0" class="Black-Overlay" v-if="clickedDrink.length">
 
   </div>
 
 
-<!------------------------------------------- Specific Drink Display ------------------------------------------------>
+<!-------------------------------------------- Specific Drink Display ----------------------------------------------->
 
   <Transition name="bounce">
   <div class="DrinkDisplay" v-if="clickedDrink.length">
@@ -303,7 +275,6 @@
       Gain access to free tools.
       </p>
     </div>
-
 
   </div>
 

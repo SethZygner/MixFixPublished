@@ -7,7 +7,6 @@ import firebase from "firebase/compat";
 import {getAuth} from "firebase/auth";
 import {Swiper, SwiperSlide} from "swiper/vue";
 import 'swiper/css';
-import { getStorage, ref as StorageRef, uploadBytes } from "firebase/storage";
 
 
 window.scrollTo(0, 0);
@@ -59,7 +58,6 @@ fire.onAuthStateChanged(fire.getAuth(), ()=>{
 
 
 //Functions
-
 function validateIngredient(){
 
   let valid = true;
@@ -132,17 +130,25 @@ function removeIngredient(index){
   }
 }
 
-
 //Edit an ingredient
 function editIngredient(index){
   //Gets the ingredient the user wants to edit
   let editedIngredient = DrinkIngredients[index];
+
   editItem.value = true;
+
   //This section populates all the inputs of what the user wanted to edit
   Ingredient.value = editedIngredient.Ingredient;
-  Measurement.value = editedIngredient.Measurement;
-  Unit.value = editedIngredient.Unit;
   Alcoholic.value = editedIngredient.Alcoholic;
+
+  //Only populate unit and measurement if the Measurement isn't null
+  if(Measurement.value){
+    Measurement.value = editedIngredient.Measurement;
+    Unit.value = editedIngredient.Unit;
+  }
+
+
+  //Only add the percent and proof if Alcohol is true
   if (Alcoholic.value === true){
     Percent.value = editedIngredient.Percent;
     PercentOrProof.value = editedIngredient.PercentOrProof
@@ -213,21 +219,31 @@ function clearAllFields(){
   Ingredient.value = "";
 }
 
-
+//Posts the drink the user has made
 function postDrink(){
 
+//Clears all the previous drink information
   DrinkInformation.length = 0;
 
+  //Drink name can't be empty
   if(DrinkName.value.trim()){
+
+    //Description can't be empty
     if(Description.value.trim()){
+
+      //Call to the realtime database
       fire.database().ref('users/'+getAuth().currentUser.uid).get()
           .then((result)=>{
+
+            //Fill DrinkInformation with the drink info being posted
             DrinkInformation.push({
               DrinkName: DrinkName.value,
               ABV: ABV.value,
               Description: Description.value,
               UserID: fire.getAuth().currentUser.uid,
               Username: result.val().Username,
+
+              //The Image is optional
               ...drinkImage.value && {
                 Image: drinkImage.value
               }
@@ -237,6 +253,8 @@ function postDrink(){
 
           })
       .then(()=>{
+
+        //Transfers user back to the social hub page
         router.push('/socialHub');
       })
     }else{
@@ -249,10 +267,7 @@ function postDrink(){
 
 }
 
-
-
-//Testing grounds
-
+//Show image when uploading
 function showImageToUpload(event){
   drinkImage.value = event.target.files[0];
 
@@ -260,7 +275,6 @@ function showImageToUpload(event){
 
   console.log(displayImage.value)
 }
-
 
 
 
