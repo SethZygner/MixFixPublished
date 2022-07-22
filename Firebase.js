@@ -63,12 +63,6 @@ async function newUser(Username, Email, Password, Description, ImageURL){
         })
 }
 
-function logIn(Email, Password){
-    signInWithEmailAndPassword(getAuth(), Email, Password)
-        .catch((err)=>{
-            console.log(err.message);
-        })
-}
 
 async function publicPost(message){
 
@@ -162,7 +156,6 @@ export default {
     newUser,
     getAuth,
     onAuthStateChanged,
-    logIn,
     publicPost,
     newDrink,
     signOut,

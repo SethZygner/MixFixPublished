@@ -25,7 +25,7 @@ function signOut(){
     setTimeout(()=>{
       loading.value = false;
       router.push('/');
-    }, 3000);
+    }, 1000);
   }catch(err){
     alert(err.message)
   }
@@ -37,19 +37,21 @@ function getSpecificDrink(index){
 }
 
 onAuthStateChanged(getAuth(), ()=>{
-
   const getUserInfo = firebase.database().ref();
-  getUserInfo.child("users").get()
-      .then((snapshot)=>{
-        snapshot.forEach((user)=>{
-
-          if(user.key === getAuth().currentUser.uid && getAuth().currentUser){
-            UserInfo.push(user.val());
-            console.log(UserInfo)
-            return 0;
-          }
+  if(getAuth().currentUser){
+    getUserInfo.child("users").get()
+        .then((snapshot)=>{
+          snapshot.forEach((user)=>{
+            if(getAuth().currentUser.uid){
+              if(user.key === getAuth().currentUser.uid){
+                UserInfo.push(user.val());
+                return 0;
+              }
+            }
+          })
         })
-      })
+  }
+
 })
 
 

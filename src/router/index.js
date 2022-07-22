@@ -3,7 +3,7 @@ import Home from '../views/Home.vue'
 import sigIn from '../views/signIn.vue'
 import SocialHub from '../views/SocialHub.vue';
 import UserAccount from '../views/Account.vue';
-import CreateDrink from '../views/CreateDrink.vue';
+import CreateDrink from '../views/CreateNewDrink.vue';
 import Browse from '../views/Browse.vue';
 import {getAuth, onAuthStateChanged} from "firebase/auth";
 

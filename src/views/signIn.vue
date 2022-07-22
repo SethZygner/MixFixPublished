@@ -2,6 +2,7 @@
 import {ref} from "vue";
 import fire from '../../Firebase.js';
 import {useRouter} from "vue-router";
+import {getAuth, signInWithEmailAndPassword} from "firebase/auth";
 
 window.scrollTo(0, 0);
 
@@ -14,9 +15,11 @@ let newEmail = ref("");
 let newPassword = ref("");
 let rePassword = ref("");
 let username = ref("");
+let errorMessage = ref("");
 
 let signIn = ref(false);
 let loading = ref(false);
+let showErrorMessage = ref(false);
 
 
 //Misc
@@ -29,19 +32,21 @@ let emailVerification = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 //Functions
 function signInUser(){
   if(emailVerification.test(email.value)){
-    try{
-
-      fire.logIn(email.value.trim(), password.value.trim());
+    signInWithEmailAndPassword(getAuth(), email.value, password.value)
+    .then(()=>{
       email.value = "";
       password.value = "";
       loading.value = true;
       setTimeout(()=>{
         loading.value = false;
         router.push('/');
-      }, 3000);
-    }catch (err){
-      alert("Something went wrong: "+err.message);
-    }
+      }, 1000);
+    })
+    .catch((err)=>{
+      errorMessage.value = err.message;
+    });
+
+
   }
 }
 
@@ -76,6 +81,13 @@ function newUser(){
     <h1>Processing...</h1>
   </div>
 
+  <div v-if="errorMessage" class="Error-Pop-Up">
+    <p>{{errorMessage}}</p>
+    <button @click="errorMessage = ''">Okay</button>
+  </div>
+
+
+
   <div id="phoneDisplay">
 
     <div id="phoneSignIn" v-if="!signIn">
@@ -101,7 +113,6 @@ function newUser(){
     </div>
 
   </div>
-
 
   <div id="signContent">
 
@@ -165,6 +176,23 @@ function newUser(){
 
 
 <style scoped>
+
+.Error-Pop-Up{
+  position: fixed;
+  top: 15em;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  height: 10em;
+  width: 95%;
+  background: rgba(0, 0, 0, .8);
+  z-index: 10;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  border-radius: 1em;
+}
 
 
 #loadingScreen{

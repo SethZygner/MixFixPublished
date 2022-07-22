@@ -140,12 +140,9 @@ function editIngredient(index){
   //This section populates all the inputs of what the user wanted to edit
   Ingredient.value = editedIngredient.Ingredient;
   Alcoholic.value = editedIngredient.Alcoholic;
+  Measurement.value = editedIngredient.Measurement;
+  Unit.value = editedIngredient.Unit;
 
-  //Only populate unit and measurement if the Measurement isn't null
-  if(Measurement.value){
-    Measurement.value = editedIngredient.Measurement;
-    Unit.value = editedIngredient.Unit;
-  }
 
 
   //Only add the percent and proof if Alcohol is true

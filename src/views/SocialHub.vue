@@ -60,16 +60,6 @@
     FilteredDrinks.length = 0;
   }//Clears all the filters the user had entered
 
-  function SendPost(){
-
-
-    if(fire.getAuth().currentUser.uid){
-      fire.publicPost(message.value.trim());
-      message.value = "";
-    }
-
-  } //Sends a post to the messages
-
   async function ShowDrinkDetails(index){
     clickedDrink.push(Drinks[index]);
     const Check = firebase.database().ref();
@@ -108,15 +98,16 @@
 
   } //Fills the 'clickedDrink' array with the information of the specific drink clicked and checks if the drink has been liked or not
 
-  function AddToFavorites(){
-    Favorite.value = true;
-    fire.AddToUserDrinkFavorites(clickedDrink[0]);
-  }
-
-  function UnAddFavorites(){
-    Favorite.value = false;
-    fire.UnAddUserFavorite(clickedDrink[0].DrinkID);
-  }
+  //Use for later Updates
+  // function AddToFavorites(){
+  //   Favorite.value = true;
+  //   fire.AddToUserDrinkFavorites(clickedDrink[0]);
+  // }
+  //
+  // function UnAddFavorites(){
+  //   Favorite.value = false;
+  //   fire.UnAddUserFavorite(clickedDrink[0].DrinkID);
+  // }
 
 
   //Constant Updates
@@ -232,6 +223,10 @@
 
 <!---------------------------------------------- Show List of Drinks ------------------------------------------------>
 
+
+    <button @click="router.push('/createDrink')" v-if="getAuth().currentUser" class="Create-A-Drink">Create A Drink</button>
+    <button @click="router.push('/signIn')" v-else class="Create-A-Drink">Sign-Up To Create A Drink</button>
+
     <div class="Show-Drinks" >
       <div @click="ShowDrinkDetails(Drinks.indexOf(drink))" v-if="!FilteredDrinks.length" class="User-Drink" v-for="drink in Drinks">
         <p class="DrinkName">{{drink.DrinkInfo[0].DrinkName}}</p>
@@ -251,30 +246,6 @@
     </div>
 
 
-<!------------------------------------------------ Social Options --------------------------------------------------->
-
-    <div v-if="signedIn" class="Social-Options">
-      <div>
-        <img src="../assets/Icons/filterIcon.png" alt="">
-        <p>Filters</p>
-      </div>
-      <div @click="router.push('/createDrink')">
-        <p >Create A Drink</p>
-      </div>
-      <div>
-        <p>Social Chat</p>
-      </div>
-      <div>
-        <p>Tools</p>
-      </div>
-    </div>
-
-    <div v-else class="SignUpWarning" style="color: white;">
-      <h2>Sign Up!</h2>
-      <p>Create, save, and explore new drinks!<br>
-      Gain access to free tools.
-      </p>
-    </div>
 
   </div>
 
@@ -302,10 +273,26 @@
   text-align: center;
   margin-top: 6em;
   width: 100%;
-  display: grid;
-  grid-template-columns: 70% 30%;
   padding: 1em;
   box-sizing: border-box;
+}
+
+button:hover{
+  cursor: pointer;
+}
+
+.Create-A-Drink{
+  margin: 1em auto;
+  width: 80%;
+  background: linear-gradient(30deg, #F166B3, #6254C9);
+  color: white;
+  font-weight: bold;
+  font-size: 1em;
+  border: none;
+  border-radius: 4em;
+  height: 3em;
+
+
 }
 
 
@@ -325,7 +312,8 @@
   padding: 2em;
   column-gap: .5em;
   row-gap: 1em;
-  max-height: 35em;
+  min-height: 35em;
+  height: auto;
   color: white;
 
   box-shadow: inset 0 0 10px #000000;
@@ -366,39 +354,6 @@
 
 .ABV{
   margin: .1em auto 0 auto;
-}
-
-
-/*---------------------------------------------------Social Options--------------------------------------------------*/
-
-.Social-Options{
-  display: grid;
-  grid-template-columns: 50% 50%;
-  box-sizing: border-box;
-  padding: 1em 1em 10em 1em;
-  color: white;
-  gap: 1em;
-  justify-content: center;
-  text-align: center;
-
-}
-
-.Social-Options div{
-  border: 1px white solid;
-  min-height: 8em;
-  padding-top: 2em;
-  overflow: hidden;
-  border-radius: 1em;
-}
-
-.Social-Options div img{
-  width: 20%;
-  height: auto;
-}
-
-.Social-Options div:hover{
-  background: linear-gradient(30deg, #F166B3, #6254C9);
-  cursor: pointer;
 }
 
 
@@ -446,6 +401,7 @@
 
 .DrinkInformation img{
   width: 75%;
+  max-height: 20em;
   height: auto;
   border-radius: 1em;
   border: 2px white solid;
@@ -577,7 +533,7 @@
 
   .DrinkInformation img{
     width: 75%;
-    max-height: 13em;
+    max-height: 10em;
     border-radius: 1em;
     border: 2px white solid;
   }
@@ -602,12 +558,3 @@
 }
 
 </style>
-
-
-
-
-
-
-
-
-
