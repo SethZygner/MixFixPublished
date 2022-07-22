@@ -130,7 +130,7 @@ function specificDrinkClicked(index){
 <template>
 
   <div v-if="DrinkInfo.length" @click="DrinkInfo.length = 0;" class="fixed-top" style="width: 100%; height: 500em; background-color: rgba(0, 0, 0, .7); z-index: 3;">
-      <DrinkInformationCard style="z-index: 4;">
+      <DrinkInformationCard style="z-index: 4; margin-top: 8em;">
         <template #DrinkImage>
           <img class="img-fluid" :src="DrinkInfo[1].Image" alt="">
         </template>

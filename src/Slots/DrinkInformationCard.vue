@@ -29,7 +29,7 @@ import { EffectFlip } from 'swiper';
 .Card-Container{
   width: 90%;
   height: auto;
-  margin: 10em auto 0 auto;
+  margin: 0 auto;
   background-color: white;
   padding: 1em;
   border-radius: 10px;
