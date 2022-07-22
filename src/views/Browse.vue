@@ -181,7 +181,7 @@ function specificDrinkClicked(index){
       <swiper-slide @click="specificDrinkClicked(Drinks.indexOf(item));" v-for="item in Drinks" class="Swipe-Slide">
         <DrinkCard>
           <template #Image-Slot>
-            <img :src=item.strDrinkThumb alt="">
+            <img class="img-fluid" :src=item.strDrinkThumb alt="">
           </template>
           <template #DrinkName-Slot>
             <h4 style="text-overflow: ellipsis; overflow: hidden; height: 1em">{{item.strDrink}}</h4>
@@ -195,7 +195,7 @@ function specificDrinkClicked(index){
       <swiper-slide @click="specificDrinkClicked(Drinks.indexOf(item));" v-for="item in Drinks" class="Swipe-Slide">
         <DrinkCard @click="clickedDrink = !clickedDrink">
           <template #Image-Slot>
-            <img :src=item.strDrinkThumb alt="">
+            <img class="img-fluid" :src=item.strDrinkThumb alt="">
           </template>
           <template #DrinkName-Slot>
             <h4 style="text-overflow: ellipsis; overflow: hidden; height: 1em">{{item.strDrink}}</h4>
