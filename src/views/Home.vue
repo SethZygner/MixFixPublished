@@ -1,12 +1,23 @@
 <script setup>
 import {useRouter} from "vue-router";
-import {ref} from "vue";
+import {onMounted, reactive, ref} from "vue";
 import {getAuth, onAuthStateChanged} from "firebase/auth";
+import DrinkCard from "../Slots/DrinkCard.vue"
 import fire from "../../Firebase.js";
+import AOS from "aos";
+
+
+onMounted(() => {
+  AOS.init();
+})
 
 const router = useRouter();
 
+const randomDrinkURL = "https://www.thecocktaildb.com/api/json/v1/1/random.php";
+
 let signedIn = ref(false);
+
+let DrinkInfo = reactive([]);
 
 window.scrollTo(0, 0);
 
@@ -16,123 +27,268 @@ onAuthStateChanged(getAuth(), ()=>{
 })
 
 
+let testing = ref(true);
+
+function test(){
+  fetch(randomDrinkURL)
+  .then((result)=>{
+    testing.value = false;
+    DrinkInfo.length = 0;
+    return result.json();
+  })
+  .then((compData)=>{
+    let obj = compData.drinks[0];
+    let IngObj = [];
+    let GeneralInfo = [{
+      DrinkName: obj.strDrink,
+      DrinkID: obj.idDrink,
+      Image: obj.strDrinkThumb,
+      Instructions: obj.strInstructions
+    }];
+
+
+    let i = 1;
+    for(let key in obj){
+      let strIng = "strIngredient"+i.toString();
+      let strMes = "strMeasure"+i.toString();
+      if(strIng in obj){
+        if(obj[strIng]){
+          if(obj[strMes]){
+            IngObj.push({
+              Ingredient: obj[strIng],
+              Measurement: obj[strMes]
+            });
+          }else{
+            IngObj.push({
+              Ingredient: obj[strIng],
+              Measurement: "Users' Choice"
+            });
+          }
+        }
+      }
+      i++;
+    }
+    DrinkInfo.push(IngObj, ...GeneralInfo);
+    setTimeout(()=>{
+      testing.value = true;
+    }, 500);
+
+    console.log(DrinkInfo);
+  })
+}
+
+test();
+
+
 </script>
 
 
 
 <template>
-  <div id="Top-Portion" class="d-flex text-center mx-auto container-fluid px-0" style="">
-    <div style="background-color: rgba(0, 0, 0, .6);" class="mx-auto container-fluid">
-      <h4>Welcome to MixerFixer</h4>
-      <i>"Where all your drinks come true!"</i>
+
+<!----------------------------------------------------------TITLE--------------------------------------------------------->
+  <div id="Title" class="mx-auto text-center p-5" data-aos="fade-up">
+    <h1 >The online community for real<br>social drinking</h1>
+    <i>"Where all your drinks come true"</i>
+  </div>
+
+  <!---------------------------------------------------HORIZONTAL LINE---------------------------------------------------->
+  <div class="Horizontal-Gradient-Line mb-5"></div>
+
+
+  <!-----------------------------------------------------MAIN CONTENT------------------------------------------------------>
+  <div class="container-fluid mx-auto">
+    <div class="row row-flex text-center justify-content-around gy-3 p-2">
+
+
+
+      <!----------------------------------------------RANDOM GENERATOR-------------------------------------------->
+      <div class="col-lg-11 col-md-12 mb-2 p-4 General-Panel"  data-aos="fade-up" style="overflow-y: hidden;">
+        <h2 class="mb-4">Random Drink Generator</h2>
+
+        <!-----------------------------------------------DRINK CARD------------------------------------------------>
+        <div id="Random-Panel" class="row mx-auto justify-content-around">
+          <div class="col-lg-5 col-md-12">
+            <Transition name="slide-left">
+              <DrinkCard v-if="DrinkInfo.length && testing">
+                <template #Image-Slot>
+                  <img :src="DrinkInfo[1].Image"  alt="">
+                </template>
+                <template #DrinkName-Slot>
+                  {{DrinkInfo[1].DrinkName}}
+                </template>
+              </DrinkCard>
+            </Transition>
+          </div>
+
+          <Transition name="slide-right">
+            <div v-if="DrinkInfo.length && testing" class="col-lg-5 Computer-Ingredients">
+              <div>
+                <h1>Instructions</h1>
+                <h4>{{DrinkInfo[1].Instructions}}</h4>
+              </div>
+
+
+              <h1>Ingredients</h1>
+              <div class="text-center" v-for="item in DrinkInfo[0]">
+                <h5>{{item.Ingredient}} - <span v-if="item.Measurement">({{item.Measurement}})</span></h5>
+              </div>
+            </div>
+          </Transition>
+
+
+
+        </div>
+        <button class="btn-outline-dark btn m-4" @click="test">Test Your Luck</button>
+
+      </div>
+
+      <!----------------------------------------------RANDOM GENERATOR-------------------------------------------->
+      <div class="col-lg-5 col-md-12 General-Panel" data-aos="fade-right">
+        <div class="row row-flex p-2">
+          <div class="col-4">
+            <img src="../assets/Icons/Browse.png" class="img-fluid" style="max-height: 10em" alt="">
+          </div>
+          <div class="col p-2">
+            <h2>Browse</h2>
+            <p>Look up a specific drink or make a mix with specific ingredients!</p>
+            <button class="btn btn-outline-dark" @click="router.push('/browseCocktails')">Browse</button>
+          </div>
+        </div>
+      </div>
+
+
+      <div class="col-lg-5 col-md-12 General-Panel " data-aos="fade-left">
+        <div class="row row-flex p-2">
+          <div class="col-4">
+            <img src="../assets/Icons/Discover.png" class="img-fluid" style="max-height: 10em" alt="">
+          </div>
+          <div class="col">
+            <h2>Social Hub</h2>
+            <p>Discover, save, and create new drinks! It's like a social media, but
+            for alcohol!</p>
+            <button class="btn btn-outline-dark">Get Social</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-11 col-md-12 my-4 p-4  General-Panel"  data-aos="fade-up">
+        <div class="row row-flex">
+          <div class="col-4">
+            <img src="../assets/Icons/Tools.png" class="img-fluid" style="max-height: 12em" alt="">
+          </div>
+
+          <div class="col-8">
+            <h2>Tools</h2>
+            <p>Want to measure the the strength of a drink? Use our built in tools to make a drink
+            that best fits your taste!</p>
+            <button class="btn btn-outline-dark">Tools</button>
+          </div>
+
+        </div>
+      </div>
     </div>
   </div>
 
-
-  <div class="Section Gradient-Portion row container-fluid text-center">
-    <div class="col">
-      <img src="../assets/Icons/Browse.png" alt="" height="300">
-    </div>
-    <div class="col">
-      <h2>Browse Drinks</h2>
-      <h5>Have a drink in mind that you're not quite sure how to make?<br>Browse drinks and cocktails by entering the name or<br>
-      ingredients you have on hand to find a drink best suited<br>for you!</h5>
-      <button class="btn" @click="router.push('/browseCocktails')">Browse</button>
-    </div>
-  </div>
-
-  <div class="Section White-Portion row container-fluid text-center">
-    <div class="col">
-      <h2>Get Social</h2>
-      <h5>Discover new drinks from fellow mixers!<br>Explore drinks and add them to your favorites.<br>Feeling creative?
-      Create your own mix to share with the community!</h5>
-<!--      <RouterLink to="/socialHub"><button class="btn">Discover</button></RouterLink>-->
-
-    </div>
-    <div class="col">
-      <img src="../assets/Icons/Discover.png" alt="" height="300">
-    </div>
-  </div>
-
-  <div class="Section Gradient-Portion row container-fluid text-center">
-    <div class="col">
-      <img src="../assets/Icons/Tools.png" alt="" height="300">
-    </div>
-    <div class="col">
-      <h2>Tools</h2>
-      <h5>Want to know some tips and tricks to make drinks? Or even find out properties of your current drink.<br>Use our Mixer tools!</h5>
-<!--      <button class="btn">Tools</button>-->
-    </div>
-  </div>
 
 </template>
 
 
 <style scoped>
 
-#Top-Portion{
-  height: 15em;
-  background-image: url("../assets/Image_1.png");
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  margin-top: 6em;
-  color: white; align-items: center;
+#Title{
+  margin-top: 2em;
 }
 
-.Section{
+#Title h1{
+  line-height: 1.5em;
+}
+
+.row-flex{
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.General-Panel{
+  box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 56px;
+}
+
+.row-flex div{
+  overflow-wrap: break-word;
+}
+
+.Computer-Ingredients{
+  max-height: 28em;
+  overflow-y: scroll;
+}
+
+.Computer-Ingredients::-webkit-scrollbar{
+  background-color: darkgrey;
+  width: 5px;
+}
+
+#Random-Panel{
+  width: 80%;
+}
+
+
+
+/*Misc*/
+.Horizontal-Gradient-Line{
+  width: 85%;
+  border-image: linear-gradient(30deg, #F166B3, #6254C9) 4;
+  border-bottom: 4px solid transparent;
   margin: 0 auto;
-  padding: 1.5em;
-  box-sizing: border-box;
-  border-top: 2px white solid;
 }
 
-.Gradient-Portion{
-  background: linear-gradient(30deg, #F166B3, #6254C9);
-  color: white;
+.slide-left-enter-active {
+  transition: .5s ;
 }
 
-.Gradient-Portion button{
-  background: white;
+.slide-left-leave-active {
+  transition: .5s;
 }
 
-.White-Portion{
-  background-color: white;
-  color: black;
+.slide-left-enter-from,
+.slide-left-leave-to {
+  transform: translateX(-45em);
 }
 
-.White-Portion button{
-  background: linear-gradient(30deg, #F166B3, #6254C9);
-  color: white;
+.slide-right-enter-active {
+  transition: .5s ;
 }
 
-button{
-  width: 70%;
-  font-weight: bold;
-  text-align: center;
+.slide-right-leave-active {
+  transition: .5s;
+}
+
+.slide-right-enter-from,
+.slide-right-leave-to {
+  transform: translateX(45em);
 }
 
 
-@media screen and (max-width: 560px){
+@media screen and (min-width: 0) and (max-width: 600px){
 
-  #Top-Portion{
-    margin-top: 0;
+  #Title{
+    margin-top: 0 !important;
   }
 
-  .Section img{
-    height: 10em;
+  .General-Panel{
+    box-shadow: rgba(17, 17, 26, 0.1) 0px 0px 16px;
   }
 
-  .Section h2{
-    font-size: 1em;
-    margin-top: 1em;
+}
+
+
+@media screen and (min-width: 0) and (max-width: 991px){
+  .Computer-Ingredients{
+    display: none;
   }
 
-  .Section h5{
-    font-size: .70em;
+  #Random-Panel{
+    width: 100%;
   }
-
-
 }
 
 

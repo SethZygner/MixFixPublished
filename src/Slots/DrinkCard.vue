@@ -17,10 +17,6 @@
 
 <style scoped>
 
-.card-body{
-  color: white;
-  background: linear-gradient(30deg, #F166B3, #6254C9);
-}
 
 .card{
   box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;

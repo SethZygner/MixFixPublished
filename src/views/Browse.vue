@@ -19,7 +19,6 @@ let AutocompleteIngredient = reactive([]);
 
 //API Links
 
-const randomDrinkURL = "https://www.thecocktaildb.com/api/json/v1/1/random.php";
 let searchByName = "https://www.thecocktaildb.com/api/json/v1/1/search.php?s=";
 let Drinks = reactive([]);
 let DrinkInfo = reactive([]);
@@ -239,7 +238,8 @@ function specificDrinkClicked(index){
 
 <style scoped>
 .Swipe-Slide{
-  display: none;
+  width: 75%;
+  display: block;
 }
 
 .accordion button{
@@ -250,22 +250,18 @@ function specificDrinkClicked(index){
   background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'><path fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/></svg>") !important;
 }
 
+.Section{
+  width: 100%;
+  height: auto;
+  border-radius: 10px;
+}
+
+.Gradient-Section{
+  background: linear-gradient(30deg, #F166B3, #6254C9);
+  color: white;
+}
+
 @media screen and (min-width: 0) and (max-width: 600px){
-  .Swipe-Slide{
-    width: 75%;
-    display: block;
-  }
-
-  .Section{
-    width: 100%;
-    height: auto;
-    border-radius: 10px;
-  }
-
-  .Gradient-Section{
-    background: linear-gradient(30deg, #F166B3, #6254C9);
-    color: white;
-  }
 
   #Drink-Display{
     -moz-box-shadow: inset 0 -10px 10px -10px #000000;

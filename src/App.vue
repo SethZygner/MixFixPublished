@@ -1,9 +1,18 @@
 <script setup>
-import { RouterLink, RouterView } from 'vue-router';
+import {RouterLink, RouterView, useRouter} from 'vue-router';
 import {getAuth, onAuthStateChanged} from "firebase/auth";
-import {reactive, ref} from "vue";
+import {onMounted, reactive, ref} from "vue";
+import AOS from "aos";
+
+
+onMounted(() => {
+  AOS.init();
+})
+
+const router = useRouter();
 
 let signedIn = ref(false);
+
 
 
 onAuthStateChanged(getAuth(),()=>{
@@ -17,55 +26,38 @@ onAuthStateChanged(getAuth(),()=>{
 
 <template>
 
-<!--Web View-->
-  <div class="fixed-top justify-content-center" id="Navigation-Web-View">
-    <div class="nav justify-content-center mx-auto d-flex" style="align-items: center">
-      <div class="nav-item m-4"><RouterLink to="/">Home</RouterLink></div>
-      <div class="nav-item m-4"><RouterLink to="/browseCocktails">Browse</RouterLink></div>
-      <div class="navbar-brand">
-        <img src="./assets/mixerfixer.png" class="m-2" height="80" alt="">
-      </div>
-<!--      <div class="nav-item mx-4"><RouterLink to="/socialHub">Social</RouterLink></div>-->
-<!--      <div class="nav-item m-4">-->
-<!--        <RouterLink v-if="signedIn" to="/account">Account</RouterLink>-->
-<!--        <RouterLink v-else to="/signIn">Sign In</RouterLink>-->
-<!--      </div>-->
+  <div id="Main-Menu" class="container-fluid d-flex justify-content-between fixed-top" >
+    <img class="img-fluid m-2" src="./assets/mixerfixer.png" data-aos="fade-right" alt="">
+
+
+    <img alt="" src="./assets/Icons/whiteHamburger.jpg" class="img-fluid hamburger" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight" />
+
+
+    <div id="Menu" class="d-flex align-items-center text-center justify-content-between" data-aos="fade-left" style="margin-right: 4em; color: white;">
+      <h6 class="mx-3" @click="router.push('/')">HOME</h6>
+      <h6 class="mx-3" @click="router.push('/browseCocktails')">BROWSE MIXES</h6>
+<!--      <h6 class="mx-3">SOCIAL HUB</h6>-->
+<!--      <h6 v-if="signedIn" class="mx-3">ACCOUNT</h6>-->
+<!--      <h6 v-else class="mx-3">SIGN IN</h6>-->
+    </div>
+  </div>
+
+  <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRight" aria-labelledby="offcanvasRightLabel">
+    <div class="offcanvas-header">
+      <h5 id="offcanvasRightLabel">Menu</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body">
+      <button class="btn" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight"  @click="router.push('/')">Home</button>
+      <br>
+      <button class="btn" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight" @click="router.push('/browseCocktails')">Browse</button>
     </div>
   </div>
 
 
-<!--Phone View-->
-  <div id="Navigation-Phone-View">
-    <div class="fixed-top d-flex justify-content-between" id="Phone-Nav-Button">
-      <a href="#offcanvasRight" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">
-        <img class="m-1" src="./assets/Icons/whiteHamburger.jpg" alt="" height="55">
-      </a>
-      <img  src="./assets/mixerfixer.png" class="mt-2 mx-4" style="margin-bottom: -1em" height="60" alt="">
-    </div>
 
 
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasRight" aria-labelledby="offcanvasRightLabel">
-      <div class="offcanvas-header">
-        <h4 class="offcanvas-title"  id="offcanvasRightLabel">Menu</h4>
-        <button type="button" style="width: fit-content; height: fit-content" class="btn-close p-4 m-2" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-      </div>
-      <div class="offcanvas-body">
-        <RouterLink to="/"><button class="btn" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">Home</button></RouterLink>
-        <br>
-        <RouterLink to="/browseCocktails"><button class="btn" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">Browse</button></RouterLink>
-        <br>
-<!--        <RouterLink to="/socialHub"><button class="btn" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">Social</button></RouterLink>-->
-<!--        <br>-->
-<!--        <div>-->
-<!--          <RouterLink v-if="signedIn" to="/account"><button class="btn" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">Account</button></RouterLink>-->
-<!--          <RouterLink v-else to="/signIn"><button class="btn" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight">Sign In</button></RouterLink>-->
-<!--        </div>-->
-      </div>
-    </div>
-  </div>
-
-
-<div class="view">
+<div id="View">
   <RouterView />
 </div>
 
@@ -78,56 +70,33 @@ onAuthStateChanged(getAuth(),()=>{
 
 <style>
 
-#Navigation-Phone-View{
+#Main-Menu{
+  background-color: rgba(0, 0, 0, .4);
+  height: 6em;
+}
+
+#View{
+  margin-top: 6em;
+  overflow-y: hidden;
+}
+
+.hamburger{
   display: none;
 }
 
-#Navigation-Web-View a{
-  text-decoration: none;
-  color: white;
+@media screen and (min-width: 0) and (max-width: 992px){
+  .hamburger{
+    display: block;
+    padding: 1.5em;
+  }
+
+  #offcanvasRight{
+    max-width: 80%;
+  }
+
+  #Menu{
+    display: none !important;
+  }
 }
-
-#Navigation-Web-View{
-  background: rgba(0, 0, 0, .7);
-  height: auto;
-  box-sizing: border-box;
-}
-
-.nav-item{
-  color: white;
-}
-
-@media screen and (max-width: 570px){
-  #Navigation-Phone-View{
-    display: contents;
-  }
-
-  #Navigation-Web-View{
-    display: none;
-  }
-
-  #Phone-Nav-Button{
-    background-color: rgba(0, 0, 0, .7);
-  }
-
-  .offcanvas{
-    max-width: 19em !important;
-    text-align: center !important;
-  }
-
-  .offcanvas a{
-    text-decoration: none;
-
-  }
-
-  .offcanvas button{
-    width: 60%;
-    margin-top: 1em;
-    height: 4em;
-
-  }
-
-}
-
 
 </style>
