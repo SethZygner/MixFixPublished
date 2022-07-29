@@ -1,32 +1,31 @@
-<!--================================================ SCRIPT ======================================================-->
-
 <script setup>
 //Imports
 import {reactive, ref} from "vue";
-import {Swiper, SwiperSlide} from "swiper/vue";
-import { EffectCoverflow, FreeMode } from 'swiper';
 import DrinkCard from "../Slots/DrinkCard.vue"
-import DrinkInformationCard from "../Slots/DrinkInformationCard.vue"
-
+import DrinkInformationCard from "../Slots/DrinkInformationCard.vue";
+import {Swiper, SwiperSlide} from "swiper/vue";
+import 'swiper/css/bundle'
 
 
 //Misc
 window.scrollTo(0, 0);
 
 
-let AutocompleteIngredient = reactive([]);
-
 
 //API Links
 
-let searchByName = "https://www.thecocktaildb.com/api/json/v1/1/search.php?s=";
+
+let popularDrinks = "https://www.thecocktaildb.com/api/json/v2/9973533/popular.php";
 let Drinks = reactive([]);
 let DrinkInfo = reactive([]);
 let IngredientListAPI = reactive([]);
 let Ingredient = ref("");
 
+let DrinkName = ref("");
 
-let clickedDrink = ref(false);
+let showIngredients = ref(false);
+let searchByIngredient = ref(false);
+
 
 
 function getByIngredient(){
@@ -40,18 +39,20 @@ function getByIngredient(){
           return result.json();
         })
         .then((compData)=>{
+          if(compData.drinks !== "None Found" || compData.drinks)
           Drinks.push(...compData.drinks);
         })
   }
 }
-
 
 function IngredientManipulation(action, index){
 
   switch (action){
     case "Add":
       if(Ingredient.value){
+        DrinkName.value = "";
         IngredientListAPI.push(Ingredient.value);
+
       }
       getByIngredient();
       break;
@@ -59,7 +60,12 @@ function IngredientManipulation(action, index){
 
     case "Remove":
         IngredientListAPI.splice(index, 1);
-        getByIngredient();
+        if(IngredientListAPI.length){
+          getByIngredient();
+        }else {
+          getPopularDrinks();
+        }
+
       break;
 
 
@@ -68,161 +74,213 @@ function IngredientManipulation(action, index){
 }
 
 function specificDrinkClicked(index){
+  DrinkInfo.length = 0;
   let getByIdURL = "https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i="+Drinks[index].idDrink;
   fetch(getByIdURL)
   .then((result)=>{
     return result.json();
   })
   .then((compData)=>{
-
-    let obj = compData.drinks[0];
-    let IngObj = [];
-    let GeneralInfo = [{
-      DrinkName: obj.strDrink,
-      DrinkID: obj.idDrink,
-      Image: obj.strDrinkThumb,
-      Instructions: obj.strInstructions
-    }];
-
-
-    let i = 1;
-    for(let key in obj){
-      let strIng = "strIngredient"+i.toString();
-      let strMes = "strMeasure"+i.toString();
-      if(strIng in obj){
-        if(obj[strIng]){
-          if(obj[strMes]){
-            IngObj.push({
-              Ingredient: obj[strIng],
-              Measurement: obj[strMes]
-            });
-          }else{
-            IngObj.push({
-              Ingredient: obj[strIng],
-              Measurement: "Users' Choice"
-            });
-          }
-        }
-      }
-      i++;
-    }
-
-
-
-    DrinkInfo.push(IngObj, ...GeneralInfo);
+    cleanData(compData.drinks[0]);
 
   });
 
-  console.log(DrinkInfo);
-
-  clickedDrink.value = true;
 }
 
+function cleanData(data){
+  let Ingredients = [];
+
+  //Gets rid of all null data
+  Object.keys(data).forEach((key)=>{
+    if(!data[key]){
+      delete data[key];
+    }
+  });
+
+  //Separate the ingredients and measurements
+  for(let i = 1; i <= 15; i++){
+    if(("strIngredient"+i.toString()) in data){
+      if(data["strMeasure"+i.toString()]){
+        Ingredients.push({Ingredient: data["strIngredient"+i.toString()], Measurement: data["strMeasure"+i.toString()]})
+      }else{
+        Ingredients.push({Ingredient: data["strIngredient"+i.toString()], Measurement: "User's Choice"})
+      }
+    }
+  }
+
+  let GeneralInfo = [{
+    DrinkName: data.strDrink,
+    Image: data.strDrinkThumb,
+    Instructions: data.strInstructions
+  }]
+
+  DrinkInfo.push(Ingredients, ...GeneralInfo)
+  console.log(DrinkInfo);
+
+}
+
+function getPopularDrinks(){
+  Drinks.length = 0;
+  fetch(popularDrinks)
+  .then((result)=>{
+    return result.json();
+  })
+  .then((compData)=>{
+    Drinks.push(...compData.drinks);
+    console.log(Drinks);
+  })
+}
+
+function clearIngredients(){
+  IngredientListAPI.length = 0;
+  IngredientManipulation('Remove');
+}
+
+function getByDrinkName(){
+  IngredientListAPI.length = 0;
+  Drinks.length = 0;
+  let searchByName = "https://www.thecocktaildb.com/api/json/v1/1/search.php?s=";
+
+  fetch(searchByName+DrinkName.value)
+  .then((result)=>{
+    return result.json();
+  })
+  .then((compData)=>{
+    Drinks.push(...compData.drinks);
+
+
+  })
+
+}
+
+
+
+getPopularDrinks();
 
 </script>
 
 
 
 
-<!--================================================== HTML ======================================================-->
+
 
 <template>
 
-  <div v-if="DrinkInfo.length" @click="DrinkInfo.length = 0;" class="fixed-top" style="width: 100%; height: 500em; background-color: rgba(0, 0, 0, .7); z-index: 3;">
-      <DrinkInformationCard style="z-index: 4; margin-top: 8em;">
-        <template #DrinkImage>
-          <img class="img-fluid" :src="DrinkInfo[1].Image" alt="">
-        </template>
-        <template #Ingredients>
-          <h5 class="my-3" v-for="item in DrinkInfo[0]">{{item.Ingredient}} ({{item.Measurement}})</h5>
-        </template>
-        <template #Description>
-          <p>{{DrinkInfo[1].Instructions}}</p>
-        </template>
-      </DrinkInformationCard>
-  </div>
 
-  <div class="container-fluid text-center mb-4 input-group" style="margin-top: 7em">
-    <div class="input-group-text">
-      <button @click="IngredientManipulation('Add')" class="btn" id="Phone-Ingredient-Add-Button">Add Ingredient</button>
+  <div class="offcanvas offcanvas-top" tabindex="-1" id="offcanvasTop" aria-labelledby="offcanvasTopLabel">
+    <div class="offcanvas-header">
+      <h5 id="offcanvasTopLabel">Ingredients Entered</h5>
+      <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
     </div>
-    <input maxlength="20" class="form-control" style="font-size: 1.1em" type="text" placeholder="Enter ingredient here..." v-model="Ingredient">
+    <div class="offcanvas-body text-center">
+      <div class="row row-cols-2 justify-content-evenly g-2">
+        <div class="col-md-5 col-8 row row-cols-2 my-3 justify-content-evenly" id="Ingredients">
+          <div @click="IngredientManipulation('Remove', IngredientListAPI.indexOf(item))"  class="col-5" id="Ing" v-for="item in IngredientListAPI">{{item}}</div>
+        </div>
+        <div class="col-8 col-md-5">
+          <button class="btn btn-outline-dark my-3" @click="clearIngredients">Clear</button>
+        </div>
+      </div>
+
+    </div>
   </div>
 
-  <div v-if="IngredientListAPI.length" class="accordion my-4" id="accordionExample">
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="headingOne">
-        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-          Entered Ingredients
-        </button>
-      </h2>
-      <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionExample">
-        <div class="accordion-body" style="max-height: 14em; padding: 1em">
-          <div class="row row-cols-2 text-center g-2" >
-            <div @click="IngredientManipulation('Remove', IngredientListAPI.indexOf(item))" id="Ingredient" class="col"  v-for="item in IngredientListAPI">
-              <h3 >{{item}}</h3>
-            </div>
-          </div>
+
+  <div class="Overlay"  v-if="DrinkInfo.length || showIngredients" @click="DrinkInfo.length=0;">
+
+  </div>
+
+
+
+  <div class="container-fluid row row-flex mt-3 mx-auto justify-content-between text-center col-12" id="Filter-Input">
+
+    <div class="col-lg-8 col-md-10 mx-auto">
+      <div class="input-group mb-3" v-if="searchByIngredient">
+        <div class="input-group-prepend hover">
+          <span class="input-group-text" @click="searchByIngredient = !searchByIngredient"><img src="../assets/IngredientIcon.png" class="img-fluid" width="25" alt=""></span>
         </div>
+        <input type="text" class="form-control" placeholder="Enter Ingredient" @keyup.enter="IngredientManipulation('Add')" v-model="Ingredient">
+        <div class="input-group-append hover" data-bs-toggle="offcanvas" data-bs-target="#offcanvasTop" aria-controls="offcanvasTop">
+          <span class="input-group-text">({{IngredientListAPI.length}}) Ingredients</span>
+        </div>
+      </div>
+
+      <div class="input-group mb-3" v-else>
+        <div class="input-group-prepend" >
+          <span class="input-group-text hover" @click="searchByIngredient = !searchByIngredient"><img src="../assets/DrinkIcon.jpg" class="img-fluid" width="25" alt=""></span>
+        </div>
+        <input @keyup="getByDrinkName" type="text" class="form-control" placeholder="Enter Drink Name" v-model="DrinkName">
       </div>
     </div>
 
+    <p v-if="searchByIngredient"><b>Note:</b> Click the<img src="../assets/IngredientIcon.png" width="20" class="img-fluid mx-2" alt="">to search by drink name</p>
+    <p v-else><b>Note:</b> Click the<img src="../assets/DrinkIcon.jpg" width="20" class="img-fluid mx-2" alt="">to search by ingredients</p>
+
   </div>
 
+<!--  Drink Displays-->
 
+  <div class="row justify-content-evenly container-fluid mx-auto ">
 
-<div v-if="Drinks.length" >
-  <div id="Drink-Display" class="pb-3">
-    <swiper v-if="Drinks.length <= 10" :effect="'coverflow'" :grabCursor="true" :centeredSlides="true" :slidesPerView="'auto'"
-            :coverflowEffect="{rotate: 50,stretch: 10,depth: 100,modifier: 1, slideShadows: true,}"
-            :modules=[EffectCoverflow]>
+    <div class="col-md-7 col-12 mt-3" id="DrinkDisplay">
+      <div v-if="Drinks.length" class="row row-cols-lg-4 row-cols-md-3 row-cols-2 gy-3 p-3">
+        <div v-for="item in Drinks">
+          <DrinkCard id="Drink" class="hover" @click="specificDrinkClicked(Drinks.indexOf(item))">
+            <template #DrinkName-Slot>
+              {{item.strDrink}}
+            </template>
+            <template #Image-Slot>
+              <img :src="item.strDrinkThumb" class="img-fluid" alt="">
+            </template>
+          </DrinkCard>
+        </div>
+      </div>
 
-      <swiper-slide @click="specificDrinkClicked(Drinks.indexOf(item));" v-for="item in Drinks" class="Swipe-Slide">
-        <DrinkCard>
-          <template #Image-Slot>
-            <img class="img-fluid" :src=item.strDrinkThumb alt="">
-          </template>
-          <template #DrinkName-Slot>
-            <h4 style="text-overflow: ellipsis; overflow: hidden; height: 1em">{{item.strDrink}}</h4>
-          </template>
-        </DrinkCard>
-      </swiper-slide>
+      <div v-if="!Drinks.length && IngredientListAPI.length">
+        <h2>Nothing seems to match your criteria! Delete some ingrediets or add different ones!</h2>
+      </div>
 
-    </swiper>
-
-    <swiper v-else :slidesPerView="1.5" :spaceBetween="10" :freeMode="true" :modules=[FreeMode]>
-      <swiper-slide @click="specificDrinkClicked(Drinks.indexOf(item));" v-for="item in Drinks" class="Swipe-Slide">
-        <DrinkCard @click="clickedDrink = !clickedDrink">
-          <template #Image-Slot>
-            <img class="img-fluid" :src=item.strDrinkThumb alt="">
-          </template>
-          <template #DrinkName-Slot>
-            <h4 style="text-overflow: ellipsis; overflow: hidden; height: 1em">{{item.strDrink}}</h4>
-          </template>
-        </DrinkCard>
-      </swiper-slide>
-    </swiper>
-  </div>
-  <div  class="container-fluid text-center mt-2">
-    <h3>Want to delete an Ingredient?</h3>
-    <h5>Simply click on the ingredient to get rid of it!</h5>
-  </div>
-
-</div>
-  <div v-else class="container-fluid text-center">
-    <div class="Section Gradient-Section p-4 ">
-      <h2>Let's Browse!</h2>
-      <h4>Add some ingredients (e.g. Vodka, Rum, Lemonade...) in the input field above and find out what Mix you can Fix!</h4>
     </div>
-    <div class="Section White-Section p-4">
-      <h2>What's Popular?</h2>
-      <h4>Click <strong>HERE</strong> to see the latest updated popular Mixes our database has to offer.</h4>
+
+    <div class="col-md-5" id="Web-Shown-Drink-Info">
+        <DrinkInformationCard v-if="DrinkInfo.length" style="width: 65%; margin-top: -3em">
+          <template #Card-Title>{{DrinkInfo[1].DrinkName}}</template>
+          <template #Image>
+            <img :src="DrinkInfo[1].Image" class="img-fluid" alt="">
+          </template>
+          <template #Ingredients-And-Measurements>
+            <li v-for="item in DrinkInfo[0]" class="list-group-item">{{item.Ingredient}} ({{item.Measurement}})</li>
+          </template>
+          <template #Instructions>
+            <h4>{{DrinkInfo[1].Instructions}}</h4>
+          </template>
+        </DrinkInformationCard>
+
+        <div v-else class="pt-5 text-center">
+          <h3>Select a drink to find out how to make it!</h3>
+        </div>
 
     </div>
 
   </div>
 
 
+  <div class="mx-auto" id="Phone-Shown-Drink-Info" v-if="DrinkInfo.length">
+    <DrinkInformationCard >
+      <template #Card-Title>{{DrinkInfo[1].DrinkName}}</template>
+      <template #Image>
+        <img :src="DrinkInfo[1].Image" class="img-fluid" alt="">
+      </template>
+      <template #Ingredients-And-Measurements>
+        <li v-for="item in DrinkInfo[0]" class="list-group-item">{{item.Ingredient}} ({{item.Measurement}})</li>
+      </template>
+      <template #Instructions>
+        <h4>{{DrinkInfo[1].Instructions}}</h4>
+      </template>
+    </DrinkInformationCard>
+
+
+  </div>
 
 
 
@@ -234,42 +292,99 @@ function specificDrinkClicked(index){
 
 
 
-<!--================================================== STYLING ====================================================-->
-
 <style scoped>
-.Swipe-Slide{
-  width: 75%;
-  display: block;
+
+.row-flex{
+  display: flex;
+  flex-wrap: wrap;
 }
 
-.accordion button{
-  color: white;
-  background: linear-gradient(30deg, #F166B3, #6254C9);
-}
-.accordion-button:after{
-  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23ffffff'><path fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/></svg>") !important;
-}
-
-.Section{
-  width: 100%;
-  height: auto;
+#Ingredients{
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+  min-height: 5em;
+  height: fit-content;
+  padding: .5em;
   border-radius: 10px;
 }
 
-.Gradient-Section{
-  background: linear-gradient(30deg, #F166B3, #6254C9);
+#Ing{
   color: white;
+  height: fit-content;
+  padding: 1em;
+  border-radius: 10px;
+  background: linear-gradient(30deg, #F166B3, #6254C9);
 }
 
-@media screen and (min-width: 0) and (max-width: 600px){
+#DrinkDisplay{
+  max-height: 30em;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
 
-  #Drink-Display{
-    -moz-box-shadow: inset 0 -10px 10px -10px #000000;
-    -webkit-box-shadow: inset 0 -10px 10px -10px #000000;
-    box-shadow: inset 0 -10px 10px -10px #000000;
+
+.hover:hover{
+  cursor: pointer;
+}
+
+#Phone-Shown-Drink-Info{
+  display: none;
+}
+
+.Overlay{
+  display: none;
+}
+
+.offcanvas{
+  min-height: 25em;
+}
+
+@media screen and (min-width: 0) and (max-width: 1236px){
+  #Web-Shown-Drink-Info{
+    display: none !important;
   }
 
+  #Phone-Shown-Drink-Info{
+    display: block !important;
+    z-index: 201;
+    position: fixed;
+    top: 5em;
+    left: 0;
+    right: 0;
+    width: 35%;
+  }
+
+  .Overlay{
+    display: block !important;
+    position: fixed;
+    background-color: rgba(0, 0, 0, .8);
+    width: 100%;
+    height: 100%;
+    top: 0;
+    z-index: 200;
+  }
+
+
 }
+
+@media screen and (min-width: 0) and (max-width: 925px){
+  #Phone-Shown-Drink-Info{
+    width: 50%;
+  }
+}
+
+@media screen and (min-width: 0) and (max-width: 615px){
+  #Phone-Shown-Drink-Info{
+    width: 70%;
+  }
+}
+
+@media screen and (min-width: 0) and (max-width: 400px){
+  #Phone-Shown-Drink-Info{
+    width: 90%;
+  }
+}
+
+
 
 </style>
 

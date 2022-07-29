@@ -1,48 +1,52 @@
 <script setup>
 import {Swiper, SwiperSlide} from "swiper/vue";
-import { EffectFlip } from 'swiper';
+import { EffectFlip, Navigation } from 'swiper';
 </script>
 
 <template>
 
-  <swiper :effect="'flip'" :modules=[EffectFlip]  class="container-fluid fixed-top  text-center" >
-    <swiper-slide class="Card-Container">
-      <div id="Image">
-        <slot name="DrinkImage" ><img class="img-fluid" src="../assets/Image_1.png" alt=""></slot>
-      </div>
-      <div id="Ingredients">
-        <slot name="Ingredients"></slot>
+
+
+  <Swiper :effect="'flip'" :modules=[EffectFlip,Navigation] :navigation="true"  class="container-fluid text-center p-4 d-flex" id="Card" >
+    <swiper-slide>
+      <div class="card" >
+        <div class="card-img-top">
+          <slot name="Image" class="img-fluid" ></slot>
+        </div>
+
+        <div class="card-body">
+          <h5 class="card-title">
+            <slot name="Card-Title"></slot>
+          </h5>
+        </div>
+
+        <ul class="list-group list-group-flush" id="Ingredients">
+          <slot name="Ingredients-And-Measurements"></slot>
+        </ul>
       </div>
     </swiper-slide>
-
-    <swiper-slide class="Card-Container">
-      <div id="Instructions">
-        <slot name="Description"><p>No Instructions here</p></slot>
+    <swiper-slide style="background-color: white; height: 30em" class="p-3" id="Instructions">
+      <div class="mt-5 p-2" >
+        <h4><slot name="Instructions"></slot></h4>
       </div>
-
     </swiper-slide>
-  </swiper>
+  </Swiper>
+
+
+
 </template>
 
 <style scoped>
 
-.Card-Container{
-  width: 90%;
-  height: auto;
-  margin: 0 auto;
-  background-color: white;
-  padding: 1em;
-  border-radius: 10px;
-}
 
-#Ingredients, #Instructions{
-  height: 15em;
+#Ingredients{
   overflow-y: scroll;
-  overflow-x: hidden;
-  padding: 1em;
+  max-height: 8em;
 }
 
-
+#Instructions{
+  overflow-y: scroll;
+}
 
 
 </style>

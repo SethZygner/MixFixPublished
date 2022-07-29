@@ -2,7 +2,8 @@
 import {useRouter} from "vue-router";
 import {onMounted, reactive, ref} from "vue";
 import {getAuth, onAuthStateChanged} from "firebase/auth";
-import DrinkCard from "../Slots/DrinkCard.vue"
+import DrinkCard from "../Slots/DrinkCard.vue";
+import DrinkInformationCard from "../Slots/DrinkInformationCard.vue";
 import fire from "../../Firebase.js";
 import AOS from "aos";
 
@@ -105,14 +106,13 @@ test();
       <!----------------------------------------------RANDOM GENERATOR-------------------------------------------->
       <div class="col-lg-11 col-md-12 mb-2 p-4 General-Panel"  data-aos="fade-up" style="overflow-y: hidden;">
         <h2 class="mb-4">Random Drink Generator</h2>
-
         <!-----------------------------------------------DRINK CARD------------------------------------------------>
         <div id="Random-Panel" class="row mx-auto justify-content-around">
           <div class="col-lg-5 col-md-12">
             <Transition name="slide-left">
               <DrinkCard v-if="DrinkInfo.length && testing">
                 <template #Image-Slot>
-                  <img :src="DrinkInfo[1].Image"  alt="">
+                  <img :src="DrinkInfo[1].Image" class="img-fluid"  alt="">
                 </template>
                 <template #DrinkName-Slot>
                   {{DrinkInfo[1].DrinkName}}
@@ -151,6 +151,7 @@ test();
           </div>
           <div class="col p-2">
             <h2>Browse</h2>
+            <div class="Horizontal-Gradient-Line mb-3"></div>
             <p>Look up a specific drink or make a mix with specific ingredients!</p>
             <button class="btn btn-outline-dark" @click="router.push('/browseCocktails')">Browse</button>
           </div>
@@ -165,6 +166,7 @@ test();
           </div>
           <div class="col">
             <h2>Social Hub</h2>
+            <div class="Horizontal-Gradient-Line mb-3"></div>
             <p>Discover, save, and create new drinks! It's like a social media, but
             for alcohol!</p>
             <button class="btn btn-outline-dark">Get Social</button>
@@ -180,6 +182,7 @@ test();
 
           <div class="col-8">
             <h2>Tools</h2>
+            <div class="Horizontal-Gradient-Line mb-3"></div>
             <p>Want to measure the the strength of a drink? Use our built in tools to make a drink
             that best fits your taste!</p>
             <button class="btn btn-outline-dark">Tools</button>
@@ -211,6 +214,7 @@ test();
 
 .General-Panel{
   box-shadow: rgba(17, 17, 26, 0.1) 0px 4px 16px, rgba(17, 17, 26, 0.1) 0px 8px 24px, rgba(17, 17, 26, 0.1) 0px 16px 56px;
+  background-color: white;
 }
 
 .row-flex div{
@@ -268,6 +272,7 @@ test();
 }
 
 
+
 @media screen and (min-width: 0) and (max-width: 600px){
 
   #Title{
@@ -277,6 +282,8 @@ test();
   .General-Panel{
     box-shadow: rgba(17, 17, 26, 0.1) 0px 0px 16px;
   }
+
+
 
 }
 
