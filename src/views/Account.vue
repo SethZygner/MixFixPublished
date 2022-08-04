@@ -21,7 +21,7 @@ window.scrollTo(0, 0);
 
 
         <div class="container-fluid d-flex p-0 my-3" style="width: 80%; aspect-ratio: 1/1; border-radius: 50%; border: 1px black solid; overflow: hidden">
-          <img src="../assets/ProfilePic.JPG" class="img-fluid " alt="" >
+
         </div>
 
         <h2>Name</h2>
