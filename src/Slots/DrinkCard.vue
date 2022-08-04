@@ -5,9 +5,28 @@
 <template>
 
   <div class="card" >
-    <slot name="Image-Slot"><img src="../assets/Image_1.png" class="card-img-top" alt="..."></slot>
+
+    <div class="Image">
+
+      <slot name="Image-Slot">
+        <img src="../assets/Image_1.png" class="card-img-top" alt="...">
+      </slot>
+
+    </div>
+
+
     <div class="card-body text-center">
-      <slot name="DrinkName-Slot"><h5 class="card-title">Mystery</h5></slot>
+
+      <slot name="DrinkName-Slot">
+        <h5 class="card-title">Unknown</h5>
+      </slot>
+
+    </div>
+
+    <div class="ABV text-center">
+      <slot name="ABV">
+<!--        Nothing is here for now-->
+      </slot>
     </div>
   </div>
 

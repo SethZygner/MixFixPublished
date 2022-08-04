@@ -137,19 +137,23 @@ function clearIngredients(){
 }
 
 function getByDrinkName(){
-  IngredientListAPI.length = 0;
-  Drinks.length = 0;
-  let searchByName = "https://www.thecocktaildb.com/api/json/v1/1/search.php?s=";
+  if(DrinkName.value.length){
+    IngredientListAPI.length = 0;
+    Drinks.length = 0;
+    let searchByName = "https://www.thecocktaildb.com/api/json/v1/1/search.php?s=";
 
-  fetch(searchByName+DrinkName.value)
-  .then((result)=>{
-    return result.json();
-  })
-  .then((compData)=>{
-    Drinks.push(...compData.drinks);
+    fetch(searchByName+DrinkName.value)
+        .then((result)=>{
+          return result.json();
+        })
+        .then((compData)=>{
+          Drinks.push(...compData.drinks);
 
 
-  })
+        })
+  }else{
+    getPopularDrinks();
+  }
 
 }
 
@@ -209,7 +213,7 @@ getPopularDrinks();
         <div class="input-group-prepend" >
           <span class="input-group-text hover" @click="searchByIngredient = !searchByIngredient"><img src="../assets/DrinkIcon.jpg" class="img-fluid" width="25" alt=""></span>
         </div>
-        <input @keyup="getByDrinkName" type="text" class="form-control" placeholder="Enter Drink Name" v-model="DrinkName">
+        <input @input="getByDrinkName" type="text" class="form-control" placeholder="Enter Drink Name" v-model="DrinkName">
       </div>
     </div>
 
@@ -258,6 +262,8 @@ getPopularDrinks();
 
         <div v-else class="pt-5 text-center">
           <h3>Select a drink to find out how to make it!</h3>
+          <p class="my-5">Here, you will see the ingredients as well as the instructions on the drink you select!<br>
+            If you have an account, you will be able to favorite the selected drink so you can find it easier later!</p>
         </div>
 
     </div>

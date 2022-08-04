@@ -36,9 +36,9 @@ onAuthStateChanged(getAuth(),()=>{
     <div id="Menu" class="d-flex align-items-center text-center justify-content-between" data-aos="fade-left" style="margin-right: 4em; color: white;">
       <h6 class="mx-3 hover" @click="router.push('/')">HOME</h6>
       <h6 class="mx-3 hover" @click="router.push('/browseCocktails')">BROWSE MIXES</h6>
-<!--      <h6 class="mx-3">SOCIAL HUB</h6>-->
-<!--      <h6 v-if="signedIn" class="mx-3">ACCOUNT</h6>-->
-<!--      <h6 v-else class="mx-3">SIGN IN</h6>-->
+      <h6 class="mx-3 hover" @click="router.push('socialHub')">SOCIAL HUB</h6>
+      <h6 v-if="signedIn" class="mx-3 hover" @click="router.push('/account')">ACCOUNT</h6>
+      <h6 v-else class="mx-3 hover">SIGN IN</h6>
     </div>
   </div>
 
@@ -51,6 +51,11 @@ onAuthStateChanged(getAuth(),()=>{
       <button class="btn hover" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight"  @click="router.push('/')">Home</button>
       <br>
       <button class="btn hover" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight" @click="router.push('/browseCocktails')">Browse</button>
+      <br>
+      <button class="btn hover" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight" @click="router.push('/account')">Account</button>
+      <br>
+      <button class="btn hover" data-bs-toggle="offcanvas" data-bs-target="#offcanvasRight" aria-controls="offcanvasRight" @click="router.push('/signIn')">Login</button>
+
     </div>
   </div>
 

@@ -25,7 +25,7 @@ import { EffectFlip, Navigation } from 'swiper';
         </ul>
       </div>
     </swiper-slide>
-    <swiper-slide style="background-color: white; height: 30em" class="p-3" id="Instructions">
+    <swiper-slide style="background-color: white;" class="p-3" id="Instructions">
       <div class="mt-5 p-2" >
         <h4><slot name="Instructions"></slot></h4>
       </div>
@@ -44,9 +44,6 @@ import { EffectFlip, Navigation } from 'swiper';
   max-height: 8em;
 }
 
-#Instructions{
-  overflow-y: scroll;
-}
 
 
 </style>
