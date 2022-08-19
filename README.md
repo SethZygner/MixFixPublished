@@ -1,16 +1,9 @@
-# MixFix
+#Mixer Fixer
 
-This template should help get you started developing with Vue 3 in Vite.
+- Share, Create, and Discover new alcoholic drinks with other users (or Mixers)
+- Filter drinks either on our Social Hub or in the Browse tab that has over 400+ pre-implimented drinks
+- Create a profile to save and create drinks and interract with fellow Mixers
 
-## Recommended IDE Setup
-
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=johnsoncodehk.vscode-typescript-vue-plugin).
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vitejs.dev/config/).
-
-## Project Setup
 
 ```sh
 npm install
