@@ -1,324 +1,384 @@
 <script setup>
-import {Swiper, SwiperSlide} from "swiper/vue";
-import 'swiper/css/bundle'
-import { Navigation } from 'swiper';
+import fire from '../../Firebase.js';
+import { volume } from 'units-converter';
+import uniqid from "uniqid";
+
+
+
 import {reactive, ref} from "vue";
-import Converter from 'unit-converter-pro';
+import {getAuth} from "firebase/auth";
+import router from "../router";
+
+let Instructions = ref("");
+
+let DrinkName = ref("");
+
+let DrinkImage = ref("");
+
+let ClickAddIngredient = ref(false);
+
+let Loading = ref(false);
+
+let isAlcoholic = ref(false);
+
+let ABV = ref(0.0);
+
+let Unit = ref("");
+
+let Amount = ref(undefined);
+
+let Ingredient = ref("");
+
+let Percent = ref(undefined);
+
+let ValidForAlcohol = ref(false);
+
+let SendImage = ref();
+
+let ErrorMessage = ref("");
+
+let Ingredients = reactive([]);
 
 
+Instructions.value.trim();
 
+function DisplayImage(e){
+  SendImage.value = e.target.files[0];
 
+  DrinkImage.value = URL.createObjectURL(SendImage.value);
+}
 
-let Alcoholic = ref(false);
-let Proof = ref(false);
-let IngredientMayBeAdded = ref(false);
-
-let IngredientName = ref("");
-let IngredientAmount = ref("");
-let IngredientUnit = ref("");
-let AlcoholicAmount = ref(0);
-
-
-let FlavorProfile = reactive([
-  {
-    Profile: "Boozy",
-    Description: "Flavor and aroma of the presence of alcohol in a large percentage. It may be sharp, warming, nose-tingling, or burning."
-  },
-  {
-    Profile: "Sweet",
-    Description: "Perception of the presence of sugars. Ex: Honey, fruits, maple syrup."
-  },
-  {
-    Profile: "Sour",
-    Description: "Perception of the presence of acids. Ex: Lemon, Citrus, Vinegar."
-  },
-  {
-    Profile: "Bitter",
-    Description: "Perception of the presence of bases. Ex: Tonic Water, Coffee, Dark Chocolate, Beer, Cranberries, Bitters (duh)."
-  },
-  {
-    Profile: "Umami",
-    Description: "Perception of savory flavors."
-  },
-  {
-    Profile: "Salty",
-    Description: "Perception of sodium chloride. Ex:  Sea Salt, Pickles."
-  }
-  ]);
-
-let Occasion = reactive([
-  {
-    Name: 'Celebration',
-    isActive: false
-  },
-  {
-    Name: 'Party/Large Group',
-    isActive: false
-  },
-  {
-    Name: 'R&R',
-    isActive: false
-  },
-  {
-    Name: 'Other',
-    isActive: false
-  }
-])
-
-
-let EnteredFlavorProfiles = reactive([]);
-
-
-function selectFlavorProfile(action, index){
-
-  switch (action){
-    case "Add":
-      if(EnteredFlavorProfiles.length < 3){
-        EnteredFlavorProfiles.push(FlavorProfile[index]);
-        FlavorProfile.splice(index, 1);
-      }
-      break;
-
-    case "Remove":
-      FlavorProfile.push(EnteredFlavorProfiles[index]);
-      EnteredFlavorProfiles.splice(index, 1);
-      break;
-  }
-
+function ClearInputs(){
+  Unit.value = "";
+  Amount.value = undefined;
+  Ingredient.value = "";
+  ValidForAlcohol.value = false;
+  Percent.value = undefined;
+  ErrorMessage.value = "";
+  isAlcoholic.value = false;
+  ClickAddIngredient.value = false;
 
 }
 
-function selectOccasion(index){
-  if(Occasion[index].isActive){
-    Occasion[index].isActive = false;
+function AddIngredient(){
+  ValidForAlcohol.value = false;
+
+  if(Ingredients.length !== 15){
+    if(Unit.value && !Amount.value){
+      ErrorMessage.value = "Must enter a valid amount";
+    }else if(isAlcoholic.value && (!Percent.value || !Unit.value || !Amount.value)){
+      ErrorMessage.value = "If this ingredient contains alcohol, be sure to enter a valid amount of this ingredient, " +
+          "a valid measurement(Can't choose 'N/A' or 'Part'), and a valid ABV % (Percent)."
+    }else if(isAlcoholic.value && Unit.value === "Part"){
+      ErrorMessage.value = "An alcoholic ingredient with the unit 'Part' will not be factored into the ABV % as it will not be accurate";
+    }else if(Ingredient.value && !Amount.value){
+      ErrorMessage.value = "Must enter a valid amount";
+    }else if(Percent.value > 100 || Percent.value < 0){
+      ErrorMessage.value = "Percentage must be more than 0 and less than or equal to 100";
+    }else if(Amount.value > 200 || Amount.value < 0){
+      ErrorMessage.value = "The amount of this ingredient can only be from 0 to 200!"
+    }else if(isNaN(Amount.value) || typeof Amount.value !== 'number'){
+      ErrorMessage.value = "Must enter a valid number: numbers 0-9 and one decimal allowed";
+    }else if(!Ingredient.value){
+      ErrorMessage.value = "Must enter a name for the ingredient";
+    }else{
+      if(isAlcoholic.value){
+        ValidForAlcohol.value = true;
+      }
+
+
+
+      let IngredientObject = {
+
+        ...(Amount.value && Amount.value > 0) && {
+          Amount: Amount.value,
+          ...Unit.value && {
+            Unit: Unit.value
+          }
+
+        },
+        ...ValidForAlcohol.value && {
+          Percent: Percent.value
+        },
+
+        Ingredient: Ingredient.value.trim()
+
+      }
+
+      Ingredients.push(IngredientObject);
+      getABV();
+    }
   }else{
-    Occasion.forEach((item)=>{
-      item.isActive = false;
-    })
-
-    Occasion[index].isActive = true;
+    ErrorMessage.value = "Can't have more than 15 ingredients";
   }
+
+
 }
 
-function checkIfIngredientCanBeAdded(){
-  //there has to be a name for EVERY ingredient
-  if(IngredientName.value.length >= 3){
-    IngredientMayBeAdded.value = true;
+function EditIngredient(index){
 
-    if(Alcoholic.value){
-      if(!AlcoholicAmount.value || !IngredientUnit.value){
-        IngredientMayBeAdded.value = false;
+  Ingredient.value = Ingredients[index].Ingredient;
+  Amount.value = Ingredients[index].Amount;
+
+  if("Unit" in Ingredients[index]){
+    Unit.value = Ingredients[index].Unit;
+  }
+
+  if("Percent" in Ingredients[index]){
+    isAlcoholic.value = true;
+    Percent.value = Ingredients[index].Percent;
+  }
+
+  ClickAddIngredient.value = true;
+
+
+
+  Ingredients.splice(index, 1);
+
+}
+
+function RemoveIngredient(index){
+  Ingredients.splice(index, 1);
+  getABV();
+}
+
+function getABV(){
+  let total = 0;
+  let AlcTotal = 0;
+
+
+  Ingredients.forEach((item)=>{
+    //If there's a unit in this item
+    if(item.Unit && item.Amount){
+      let Converted;
+
+      switch (item.Unit){
+        case "Dash":
+          Converted = 0;
+          break;
+
+        case "Splash":
+          Converted = 0;
+          break;
+
+        case "Shot":
+          Converted = 1.5;
+          break;
+
+        case "Fifth":
+          Converted = 25.6;
+          break;
+
+        case "pt":
+          Converted = 16;
+          break;
+
+
+        default:
+          Converted = volume(item.Amount).from(item.Unit).to('fl-oz').value;
+          break;
       }
+
+      total += Converted;
+
+      if(item.Percent){
+        AlcTotal += (item.Percent/100)*Converted;
+      }
+
+    }
+  })
+
+  if(total && AlcTotal){
+    ABV.value = (AlcTotal/total)*100;
+  }else{
+    ABV.value = 0;
+  }
+  ClearInputs();
+
+
+}
+
+
+function PostDrink(){
+
+  if(DrinkName.value){
+
+    if(Instructions.value){
+
+      if(Ingredients.length >= 2){
+        let ID = uniqid();
+        let DrinkObject = {
+          ...SendImage.value && {
+            strDrinkThumb: SendImage.value
+          },
+          strDrink: DrinkName.value,
+          Ingredients: Ingredients,
+          ABV: ABV.value,
+          Instructions: Instructions.value,
+          Creator: getAuth().currentUser.uid,
+          idDrink: ID
+        }
+
+        fire.PostDrink(DrinkObject);
+
+        Loading.value = true;
+
+        setTimeout(()=>{
+          router.push('/socialHub');
+        },1000);
+
+      }else{
+        ErrorMessage.value = "Must have 2-15 ingredients!"
+      }
+
+    }else{
+      ErrorMessage.value = "Don't forget to put some instructions!"
     }
 
-    if(IngredientUnit.value){
-      if(!IngredientAmount.value){
-        IngredientMayBeAdded.value = false;
-      }
-    }
 
   }else{
-    IngredientMayBeAdded.value = false;
+    ErrorMessage.value = "Don't forget to enter a name for your drink!"
   }
+
+
+
+
 }
 
-function ingredientToggle(action, index){
-
-
-  switch (action){
-
-    //Add an ingredient
-    case "Add":
-
-
-
-      break;
-
-
-    //Remove an ingredient
-    case "Remove":
-
-      break;
-
-
-    //Edit an ingredient
-    case "Edit":
-
-      break;
-
-  }
-}
-
-console.log(Converter.Volume)
 
 </script>
 
 <template>
 
 
+  <div class="Black-Overlay" v-if="ClickAddIngredient" @click="getABV()"></div>
 
+  <div class="Black-Overlay" v-if="Loading"></div>
 
-  <Swiper :slidesPerView="1" :spaceBetween="10" :centeredSlides="true" :modules=[Navigation] :navigation="true" class="text-center mx-auto">
+  <div id="Error" v-if="ErrorMessage">
+    <p>{{ErrorMessage}}</p>
+    <button @click="ErrorMessage = ''">Okay</button>
 
-    <swiper-slide>
-      <div class="Slide p-0 p-md-3 row row-cols-md-2 row-cols-1 justify-content-evenly">
+  </div>
 
-        <div class="col-11 col-md-5 mb-md-0 mb-4">
-            <h3>Let's get started with the basics</h3>
+  <div id="Enter-Ingredient-Pop-Up" class="Pop-Up-Md" v-if="ClickAddIngredient">
+    <div class="btn-close mt-3 ml-3" @click="getABV()"></div>
+    <input type="text" class="simple-input-md mt-5" placeholder="Ingredient Name" v-model="Ingredient" autofocus maxlength="20">
+    <br>
 
-            <div class="input-group mb-3">
-              <div class="input-group-prepend">
-                <span class="input-group-text">Drink Name</span>
-              </div>
-              <input type="text" class="form-control">
-            </div>
+    <div class="row my-3 justify-content-center">
 
-            <h4>Flavor Profiles</h4>
-            <p class="mb-5">A flavor profile describes what the fellow Mixer should expect hte drink to taste like!<br>Choose <b>AT MOST</b> 3
-              flavor profiles (optional):</p>
-            <div class="row row-cols-2 justify-content-evenly my-3 mx-auto container-fluid">
-              <div class="col-5 hover Profile my-3"  v-for="flavor in FlavorProfile">
-                <h6 @click="selectFlavorProfile('Add', FlavorProfile.indexOf(flavor))" :title="flavor.Description">{{flavor.Profile}}</h6>
-              </div>
-            </div>
-
-            <div class="Horizontal-Gradient-Line my-4"></div>
-
-          <div class="row row-cols-3 justify-content-evenly my-3 mx-auto">
-            <div class="col-3 Flavor hover">
-              <p @click="selectFlavorProfile('Remove', 0)" v-if="EnteredFlavorProfiles.length >= 1">{{EnteredFlavorProfiles[0].Profile}}</p>
-            </div>
-
-            <div class="col-3 Flavor hover">
-              <p @click="selectFlavorProfile('Remove', 1)" v-if="EnteredFlavorProfiles.length >= 2">{{EnteredFlavorProfiles[1].Profile}}</p>
-            </div>
-
-            <div class="col-3 Flavor hover">
-              <p @click="selectFlavorProfile('Remove', 2)" v-if="EnteredFlavorProfiles.length >= 3">{{EnteredFlavorProfiles[2].Profile}}</p>
-            </div>
-          </div>
-
-<!--          <div class="mt-4">-->
-
-<!--            <h5>Table of flavor profiles</h5>-->
-<!--            <table class="mx-auto  table table-bordered text-center">-->
-<!--              <thead>-->
-<!--                <tr>-->
-<!--                  <th scope="col">Flavor</th>-->
-<!--                  <th scope="col">Enhancer</th>-->
-<!--                  <th scope="col">Balancer</th>-->
-<!--                </tr>-->
-<!--              </thead>-->
-<!--              <tbody>-->
-<!--                <tr>-->
-<!--                  <td>Sweet</td>-->
-<!--                  <td>Salty</td>-->
-<!--                  <td>Bitter/Spicy</td>-->
-<!--                </tr>-->
-<!--                <tr>-->
-<!--                  <td>Sour</td>-->
-<!--                  <td>-</td>-->
-<!--                  <td>Sweet</td>-->
-<!--                </tr>-->
-<!--                <tr>-->
-<!--                  <td>Boozy</td>-->
-<!--                  <td>-</td>-->
-<!--                  <td>Sweet/Bitter</td>-->
-<!--                </tr>-->
-<!--                <tr>-->
-<!--                  <td>Bitter</td>-->
-<!--                  <td>-</td>-->
-<!--                  <td>Salty</td>-->
-<!--                </tr>-->
-<!--                <tr>-->
-<!--                  <td>Umami</td>-->
-<!--                  <td>Sour</td>-->
-<!--                  <td>-</td>-->
-<!--                </tr>-->
-<!--                <tr>-->
-<!--                  <td>Salty</td>-->
-<!--                  <td>Sweet/Sour</td>-->
-<!--                  <td>Bitter</td>-->
-<!--                </tr>-->
-<!--              </tbody>-->
-<!--            </table>-->
-<!--          </div>-->
-
-        </div>
-
-        <div class="col-12 col-md-5 mb-4 p-2 ">
-          <h3>What occasion is this drink for?</h3>
-          <h6>Although this is optional, this will help others find exactly what they're looking for which
-          may also give you a higher rating!</h6>
-          <div class="Horizontal-Gradient-Line my-3"></div>
-          <div class="row row-cols-2 text-center justify-content-evenly">
-            <div class="col-5 Occasion my-5" v-for="item in Occasion" :class="item.isActive && 'OccasionActive'">
-              <div @click="selectOccasion(Occasion.indexOf(item))">
-                <h3>{{item.Name}}</h3>
-              </div>
-              <input v-if="item.Name === 'Other' && item.isActive" type="text" class="form-control my-2" maxlength="20" placeholder="Enter Occasion (optional)">
-            </div>
-          </div>
-        </div>
-
+      <div class="d-flex justify-content-center col-md-4 col-12">
+        <input type="number" class="simple-input-sm-left-radius" placeholder="Amount" v-model="Amount" maxlength="5">
+        <select id="Unit" v-model="Unit">
+          <option value="">N/A</option>
+          <option value="Dash">Dash</option>
+          <option value="Splash">Splash</option>
+          <option value="tsp">Tsp</option>
+          <option value="Tbs">Tbs</option>
+          <option value="fl-oz">Fl-oz</option>
+          <option value="Shot">Shot</option>
+          <option value="cup">Cup</option>
+          <option value="pt">Pint</option>
+          <option value="Fifth">Fifth</option>
+          <option value="qt">Quart</option>
+          <option value="gal">Gallon</option>
+        </select>
       </div>
-    </swiper-slide>
 
-    <swiper-slide >
-      <div class="Slide">
-        <div class="container-fluid row">
-          <div class="col-12 col-md-5">
-            <h3>Ingredient Station</h3>
-            <p>Here, you can enter an ingredient, the amount of the ingredient, as well as other information such as if
-            the ingredient is alcoholic (as well as it's ABV % or Proof)</p>
-
-
-            <div>
-              <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                  <span class="input-group-text">Ingredient</span>
-                </div>
-                <input type="text" class="form-control">
-              </div>
-
-              <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                  <span class="input-group-text">Measurement</span>
-                </div>
-                <input type="number" class="form-control">
-                <select name="" id="" class="mx-2">
-                  <option value="disabled-unit" disabled selected="selected">Select Unit</option>
-                  <option value="n/a">N/A</option>
-                  <option value="Dash">Dash</option>
-                  <option value="Splash">Splash</option>
-                  <option value="tsp">Tsp.</option>
-                  <option value="tbsp">Tbsp.</option>
-                  <option value="Shot">Shot</option>
-                  <option value="cup">Cup</option>
-                  <option value="pint">Pint</option>
-                  <option value="qt">Quart</option>
-                  <option value="gal">Gallon</option>
-                </select>
-              </div>
-            </div>
-
+      <div class="col-md-4 col-12 mt-3 mt-md-0">
+        <div class="d-flex align-items-center justify-content-center">
+          <p class="mr-2 mt-3 col-md-6">Alcoholic?</p>
+          <div @click="isAlcoholic = true;" :class="isAlcoholic && 'Active-Alcoholic-Button'" class="Alcoholic-Button Hover" id="Yes-Button">
+            <p class="mt-2"><b>Yes</b></p>
           </div>
-
-          <div class="col-12 col-md-5">
-
+          <div @click="isAlcoholic = false;" :class="!isAlcoholic && 'Active-Alcoholic-Button'" class="Alcoholic-Button Hover" id="No-Button">
+            <p class="mt-2"><b>No</b></p>
           </div>
+        </div>
+      </div>
+
+      <div class="col-md-12 col-10 mt-4 text-center" v-if="isAlcoholic">
+          <input class="simple-input-sm" type="number" placeholder="ABV %" v-model="Percent" maxlength="5">
+          <br>
+          <p class="mt-2"><b>Note:</b> ABV % = Proof / 2</p>
+      </div>
+
+    </div>
+
+
+
+    <button id="Add-Ingredient" class="my-3 p-1" @click="AddIngredient">Add Ingredient</button>
+
+
+  </div>
+
+  <div class="container-fluid row justify-content-evenly mx-auto">
+
+    <div class="col-md-4 col-12 text-center ">
+      <h4 @click="ClickAddIngredient = true;">General Information</h4>
+      <input type="text" class="simple-input" placeholder="Drink Name" maxlength="20" v-model="DrinkName">
+      <br>
+      <textarea maxlength="150" id="Instruction-Text-Area" class="my-4 p-2" placeholder="Instructions" v-model="Instructions">
+
+      </textarea>
+      <p>{{Instructions.length}}/150</p>
+      <div class="mb-5 d-flex align-items-center justify-content-center Hover" id="Image-Container" :class="DrinkImage && 'Hide-Shadow'">
+        <div v-if="DrinkImage" @click="DrinkImage = ''" >
+          <img :src="DrinkImage" class="img-fluid" alt="">
+        </div>
+
+        <div v-else class="d-flex align-items-center Hover">
+          <label class="d-flex align-items-center">
+            <h2 class="mr-2">Add Image</h2>
+            <input @change="DisplayImage" type="file" style="display: none;" accept="image/*">
+            <img src="../assets/Icons/AddImage.png" class="img-fluid icon-sm" alt="">
+          </label>
 
         </div>
       </div>
-    </swiper-slide>
+    </div>
 
-    <swiper-slide >
-      <div class="Slide">
-        Hi
+    <div class="col-md-4 col-12 text-center ">
+      <h4>Ingredients</h4>
+      <div v-if="Ingredients.length < 15" class="false-simple-input mx-auto text-start pt-2 Hover" @click="ClickAddIngredient = true;"><h5 >Enter Ingredient</h5></div>
+      <div v-else class="false-simple-input mx-auto text-start pt-2 " disabled="disabled"><h5 >Enter Ingredient</h5></div>
+      <h4 v-if="Ingredients.length" class="my-2">Current ABV: {{ABV.toFixed(2)}}%</h4>
+      <div id="Ingredients" class="my-4">
+        <div v-if="Ingredients.length" class="mx-auto my-3 " >
+          <div v-for="ingredient in Ingredients" >
+            <div class="col-md-10 col-11 mx-auto d-flex align-items-center justify-content-between px-2">
+              <div class="col-4" style="word-wrap: break-word">
+                <p ><b>{{ingredient.Ingredient}}</b><span v-if="ingredient.Percent">({{ingredient.Percent}}%)</span></p>
+              </div>
+
+              <p>{{ingredient.Amount}} {{ingredient.Unit}}</p>
+              <div class="pb-3 d-flex align-items-center">
+                <img @click="EditIngredient(Ingredients.indexOf(ingredient))"  src="../assets/Icons/EditButton.png" class="mr-3 img-fluid icon-xs Hover" alt="">
+                <img @click="RemoveIngredient(Ingredients.indexOf(ingredient))" src="../assets/Icons/TrashButton.png" class="img-fluid icon-xs Hover" alt="">
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+        <div v-else class="col-10 mx-auto my-5">
+          <h5>No ingredients added yet!</h5>
+          <img src="../assets/StockImage_2.png" class="img-fluid" alt="">
+        </div>
       </div>
-    </swiper-slide>
 
-  </Swiper>
+
+    </div>
+
+    <div class="col-md-2 text-center p-3">
+      <div class="row">
+        <h3 class="col-6 col-md-12 P-Hover mb-3" @click="PostDrink">Post</h3>
+        <h3 class="col-6 col-md-12 P-Hover">Save Draft</h3>
+      </div>
+
+    </div>
+  </div>
 
 
 </template>
@@ -326,50 +386,95 @@ console.log(Converter.Volume)
 
 <style scoped>
 
-.Border{
+
+#Instruction-Text-Area{
+  resize: none;
+  width: 80%;
+  border-radius: 1em;
+  border: none;
+  height: 4em;
+}
+
+#Ingredients{
+  border-left: 1px #D9D9D9 solid;
+  border-right: 1px #D9D9D9 solid;
+  max-height: 30em;
+}
+
+
+
+#Unit{
+  border-top-right-radius: 20em;
+  border-bottom-right-radius: 20em;
+  max-height: 3em;
+}
+
+
+.Alcoholic-Button{
+  height: 3em;
+  width: 4em;
+}
+
+
+#Yes-Button{
+  border-left: black solid 1px;
+  border-top: black solid 1px;
+  border-bottom: black solid 1px;
+  border-top-left-radius: 20em;
+  border-bottom-left-radius: 20em;
+}
+
+#No-Button{
+  border-right: black solid 1px;
+  border-top: black solid 1px;
+  border-bottom: black solid 1px;
+  border-top-right-radius: 20em;
+  border-bottom-right-radius: 20em;
+}
+
+#Add-Ingredient{
   border: 1px black solid;
+  border-radius: 1em;
 }
 
-.hover:hover{
-  cursor: pointer;
+#Add-Ingredient:active{
+  background-color: black;
+  color: white;
+
 }
 
-.Horizontal-Gradient-Line{
-  width: 85%;
-  border-image: linear-gradient(30deg, #F166B3, #6254C9) 4;
-  border-bottom: 3px solid transparent;
-  margin: 0 auto;
+#Image-Container{
+  max-height: 20em;
+  min-height: 5em;
+  box-shadow: rgba(0, 0, 0, 0.2) 0 12px 12px 0 inset;
+  border-radius: 1em;
+  overflow: hidden;
+
 }
 
-.Flavor{
+#Error{
+  position: fixed;
+  margin: 10em auto;
   border: 1px black solid;
-  min-height: 1em;
+  z-index: 2000;
+  width: 70%;
+  left: 0;
+  right: 0;
+  top: 0;
+  text-align: center;
+  padding: 2em;
+  border-radius: 1em;
+  background-color: #D9D9D9;
 }
 
-.Profile{
-  border-image: linear-gradient(30deg, #F166B3, #6254C9) 4;
-  border-bottom: 2px solid transparent;
+.Hide-Shadow{
+  box-shadow: none !important;
 }
 
-.Occasion{
-  box-shadow: rgba(99, 99, 99, 0.2) 0px 2px 8px 0px;
-  aspect-ratio: 1/.4;
+.Active-Alcoholic-Button{
+  color: white;
+  background-color: black;
 }
-
-.Occasion div{
-  height: 100%;
-}
-
-.Occasion:hover{
-  cursor: pointer;
-}
-
-
-
-.OccasionActive{
-  box-shadow: inset 0 0 4px #000000;
-}
-
 
 
 </style>

@@ -5,6 +5,7 @@ import SocialHub from '../views/SocialHub.vue';
 import UserAccount from '../views/Account.vue';
 import CreateDrink from '../views/CreateNewDrink.vue';
 import Browse from '../views/Browse.vue';
+import Mixer from '../views/Mixer.vue';
 import {getAuth, onAuthStateChanged} from "firebase/auth";
 
 
@@ -40,6 +41,11 @@ const router = createRouter({
       path: '/createDrink',
       name: 'createDrink',
       component: CreateDrink
+    },
+    {
+      path: '/Mixer/:id',
+      name: 'Mixer',
+      component: Mixer
     }
   ]
 

@@ -2,71 +2,94 @@
 import {ref} from "vue";
 import fire from '../../Firebase.js';
 import {useRouter} from "vue-router";
-import {getAuth, signInWithEmailAndPassword} from "firebase/auth";
+import {getAuth} from "firebase/auth";
+
+
+let router = useRouter();
 
 window.scrollTo(0, 0);
 
+let Email = ref("");
+let Password = ref("");
+let RePassword = ref("");
+let Username = ref("");
+let SigningUp = ref(false);
+let DOB = ref(true);
+let signIn = ref(true);
 
-//Refs
-let email = ref("");
-let password = ref("");
-
-let newEmail = ref("");
-let newPassword = ref("");
-let rePassword = ref("");
-let username = ref("");
-let errorMessage = ref("");
-
-let signIn = ref(false);
-let loading = ref(false);
-let showErrorMessage = ref(false);
+const EmailValidation = new RegExp('(?:[a-z0-9!#$%&\'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&\'*+/=?^_`{|}~-]+)*|"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\\\[\x01-\x09\x0b\x0c\x0e-\x7f])*")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\\])');
+const UserNameValidation = new RegExp('[A-Za-z_][A-Za-z\\d_]');
 
 
-//Misc
-let router = useRouter();
-let emailVerification = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-
-
-
-
-//Functions
-function signInUser(){
-  if(emailVerification.test(email.value)){
-    signInWithEmailAndPassword(getAuth(), email.value, password.value)
-    .then(()=>{
-      email.value = "";
-      password.value = "";
-      loading.value = true;
-      setTimeout(()=>{
-        loading.value = false;
-        router.push('/');
-      }, 1000);
-    })
-    .catch((err)=>{
-      errorMessage.value = err.message;
-    });
-
-
-  }
+function UserClicksSignInOrSignUp(){
+  Email.value = "";
+  Password.value = "";
+  RePassword.value = "";
+  Username.value = "";
+  signIn.value = !signIn.value;
 }
 
-function newUser(){
-  if (emailVerification.test(newEmail.value.trim())){
-    if(newPassword.value.trim().length >= 8){
-      if(newPassword.value.trim() === rePassword.value.trim()){
-        fire.newUser(username.value.trim(), newEmail.value.trim(), newPassword.value.trim(), "", "");
-        router.push('/');
+function SignUp (){
+  if(Email.value && Password.value && Username.value && RePassword.value){
+    if(Password.value.trim() === RePassword.value.trim()){
+
+      if(EmailValidation.test(Email.value)){
+
+        if(Username.value.length >= 4){
+
+          if(UserNameValidation.test(Username.value)){
+
+            fire.FirestoreDB().collection("Mixers")
+                .where("Username", "==", Username.value)
+                .get()
+                .then((doc)=>{
+                  if(doc.empty){
+                    fire.NewUser(Username.value, Email.value, Password.value);
+                    SigningUp.value = true;
+
+                  }else{
+                    fire.ErrorMessage.value = "This username is already taken!"
+                  }
+                })
+
+          }else{
+            fire.ErrorMessage.value = "Invalid Username"
+
+          }
+        }else{
+          fire.ErrorMessage.value = "Username but be 4-15 characters long"
+
+        }
       }else{
-        alert("Passwords don't match!");
+        fire.ErrorMessage.value = "Not a valid Email!";
+
       }
     }else{
-      alert("Password too short!");
+      fire.ErrorMessage.value = "Passwords Don't Match!";
+
     }
   }else{
-    alert("Invalid Email!");
+    fire.ErrorMessage.value = "Please fill out all fields"
+
   }
+
+
 }
 
+function SignIn(){
+  fire.SignInUser(Email.value, Password.value);
+  SigningUp.value = true;
+  setTimeout(()=>{
+    if(!fire.ErrorMessage.value){
+      router.push('/');
+    }else{
+      SigningUp.value = false;
+    }
+
+    Email.value = '';
+    Password.value = '';
+  }, 1000);
+}
 
 
 </script>
@@ -76,96 +99,76 @@ function newUser(){
 
 <template>
 
-
-  <div v-if="loading" id="loadingScreen">
-    <h1>Processing...</h1>
+  <div v-if="SigningUp || fire.ErrorMessage.value" class="Black-Overlay"></div>
+  <div v-if="fire.ErrorMessage.value" id="Error" class="text-center col-md-7 col-10 mx-auto p-md-4 p-2">
+    <h3>Error</h3>
+    <br>
+    <p>{{fire.ErrorMessage}}</p>
+    <button @click="fire.ErrorMessage.value = '';">Okay</button>
   </div>
 
-  <div v-if="errorMessage" class="Error-Pop-Up">
-    <p>{{errorMessage}}</p>
-    <button @click="errorMessage = ''">Okay</button>
-  </div>
+  <div class="container-fluid mx-auto text-center Main-Background" style="margin-top: 5em; height: 40em;">
 
-
-
-  <div id="phoneDisplay">
-
-    <div id="phoneSignIn" v-if="!signIn">
-      <h1>Welcome Back!</h1>
-      <input type="text" placeholder="Email" v-model="email">
-      <input type="text" placeholder="Password" v-model="password">
+    <div class="col-md-6 mx-auto Main-Sign p-md-5 p-3" v-if="!signIn">
+      <img src="../assets/FinishedLogo.png" class="img-fluid pb-3 Logo" alt="">
+      <div class="d-flex">
+        <img src="../assets/Icons/usernameIcon.png" class="icon-sm img-fluid mr-3" alt="">
+        <input type="text" class="simple-input" placeholder="Username" v-model="Username">
+      </div>
       <br>
-      <button @click="signInUser">Sign In</button>
+
+      <div class="d-flex">
+        <img src="../assets/Icons/emailIcon.png" class="icon-sm img-fluid mr-3" alt="">
+        <input type="text" class="simple-input" placeholder="Email" v-model="Email">
+      </div>
+
       <br>
-      <h3>Don't have an account? <span @click="signIn = !signIn">Sign up</span></h3>
+
+      <div class="d-flex">
+        <img src="../assets/Icons/Password.png" class="icon-sm img-fluid mr-3" alt="">
+        <input type="password" class="simple-input" placeholder="Password" v-model="Password">
+      </div>
+
+      <br>
+
+      <div class="d-flex">
+        <img src="../assets/Icons/RePassword.png" class="icon-sm img-fluid mr-3" alt="">
+        <input type="password" class="simple-input" placeholder="Re-Enter Password" v-model="RePassword">
+      </div>
+
+      <br>
+
+      <button class="Button " @click="SignUp">Sign Up</button>
+      <p>Already have an account? <b class="Hover" @click="UserClicksSignInOrSignUp">Login</b></p>
+
     </div>
 
-    <div id="phoneSignUp" v-else>
-      <h1>Become a Mixer!</h1>
-      <input type="text" placeholder="Username" v-model="username">
-      <input type="text" placeholder="Email" v-model="newEmail">
-      <input type="text" placeholder="Password" v-model="newPassword">
-      <input type="text" placeholder="Re-enter Password" v-model="rePassword">
+    <!--============================================================================================ -->
+
+    <div class="col-md-6 mx-auto Main-Sign p-md-5 p-3" v-else>
+      <img src="../assets/FinishedLogo.png" class="img-fluid pb-3 Logo" alt="">
+
+      <div class="d-flex">
+        <img src="../assets/Icons/emailIcon.png" class="icon-sm img-fluid mr-3" alt="">
+        <input type="text" class="simple-input" placeholder="Email" v-model="Email">
+      </div>
+
       <br>
-      <button @click="newUser">Sign Up</button>
+
+      <div class="d-flex">
+        <img src="../assets/Icons/Password.png" class="icon-sm img-fluid mr-3" alt="">
+        <input type="password" class="simple-input" placeholder="Password" v-model="Password">
+      </div>
+
       <br>
-      <h3>Already have an account? <span @click="signIn = !signIn">Sign In</span></h3>
-    </div>
 
-  </div>
-
-  <div id="signContent">
-
-    <div id="SignUp" >
-
-
-      <div class="panel" id="signUpInvitation" v-if="!signIn">
-        <h2>Become a Mixer</h2>
-        <h3>Join the community to interact with fellow Mixers!</h3>
-        <button @click="signIn = !signIn">Sign Up</button>
-      </div>
-
-      <div class="panel" v-if="!signIn">
-        <h1>Welcome Back</h1>
-        <i class="inputIcon"><img src="../assets/Icons/emailIcon.png" alt=""></i>
-        <input type="text" v-model="email" placeholder="Email">
-        <br>
-        <i class="inputIcon"><img src="../assets/Icons/lockInput.jpg" alt=""></i>
-        <input type="password" v-model="password" placeholder="Password">
-        <br>
-        <button @click="signInUser">Sign In</button>
-      </div>
-
-
-      <div class="panel" v-if="signIn">
-        <h1>Become A Mixer</h1>
-        <i class="inputIcon"><img src="../assets/Icons/usernameIcon.png" alt=""></i>
-        <input type="text" v-model="username" placeholder="Username">
-        <br>
-        <i class="inputIcon"><img id="emailIcon" src="../assets/Icons/emailIcon.png" alt=""></i>
-        <input type="text" v-model="newEmail" placeholder="Email">
-        <br>
-        <i class="inputIcon"><img src="../assets/Icons/lockInput.jpg" alt=""></i>
-        <input type="password" v-model="newPassword" placeholder="Password">
-        <br>
-        <i class="inputIcon"><img src="../assets/Icons/lockInput.jpg" alt=""></i>
-        <input type="password" v-model="rePassword" placeholder="Re-enter Password">
-        <br>
-        <button @click="newUser">Sign Up</button>
-      </div>
-      <div class="panel" id="signInInvitation" v-if="signIn">
-        <h2>Welcome Back</h2>
-        <h3>To keep connected with us please log-in<br>with your personal info</h3>
-        <button @click="signIn = !signIn">Sign In</button>
-      </div>
-
-
-
-
+      <button class="Button " @click="SignIn">Sign In</button>
+      <p>Don't have an account? <b class="P-Hover" @click="UserClicksSignInOrSignUp">Sign Up</b></p>
 
     </div>
 
   </div>
+
 
 
 
@@ -176,189 +179,43 @@ function newUser(){
 
 
 <style scoped>
+.Main-Background{
+  background: url("../assets/StockImage1.jfif") no-repeat center;
+  background-size: cover;
+  padding-top: 4em;
+}
 
-.Error-Pop-Up{
+#Error{
   position: fixed;
-  top: 15em;
-  left: 0;
   right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  height: 10em;
-  width: 95%;
-  background: rgba(0, 0, 0, .8);
-  z-index: 10;
-  justify-content: center;
-  text-align: center;
-  color: white;
+  left: 0;
+  z-index: 2000;
+  background-color: #F3F3F3;
+  height: 50%;
+}
+
+.Main-Sign{
+  background: rgba(243,243,243, .85);
   border-radius: 1em;
 }
 
-
-#loadingScreen{
-  width: 100%;
-  height: 100%;
-  z-index: 100;
-  background: rgba(0, 0, 0, .5);
-  position: absolute;
-  top: 0;
-  color: white;
-  text-align: center;
-}
-#loadingScreen h1{
-  margin: 10em auto;
+.Logo{
+  max-height: 4em;
 }
 
-
-#signContent{
-  width: 65%;
-  height: 30em;
-  border-radius: 15px;
-  border: 3px black solid;
-  margin: 12em auto 0 auto;
-  overflow: hidden;
-  color: white;
+.Button{
+  border: none;
+  border-radius: 50em;
+  height: 4em;
+  aspect-ratio: 2/1;
+  background-color: white;
 }
 
-  #SignUp{
-    width: 100%;
-    height: 100%;
-    display: grid;
-    grid-template-columns: 50% 50%;
-
-  }
-
-
-
-  .panel{
-    text-align: center;
-    border-radius: 15px;
-  }
-
-  .panel h1{
-    margin-bottom: 2em;
-
-  }
-
-  .panel i{
-    width: 2em;
-    height: auto;
-    position: absolute;
-    margin-top: 8px;
-  }
-
-  .panel i img{
-    width: 1.5em;
-    height: auto;
-  }
-
-  #emailIcon{
-    width: 2em;
-    height: auto;
-  }
-
-  .panel input{
-    padding-left: 3em;
-    height: 3em;
-    width: 60%;
-    margin-bottom: 2em;
-    border-radius: 5px;
-    border: none;
-    background-color: rgba(0, 0, 0, .1);
-    color: black;
-  }
-
-  .panel input::placeholder{
-    color: darkgrey;
-  }
-
-  .panel button{
-    width: 12em;
-    height: 4em;
-    border-radius: 6px;
-    background: linear-gradient(30deg, #F166B3, #6254C9);
-    color: white;
-    border: none;
-  }
-
-  button:hover{
-    cursor: pointer;
-  }
-
-  .panel h2{
-    margin-top: 7em;
-  }
-
-  #signInInvitation, #signUpInvitation{
-    background: linear-gradient(30deg, #F166B3, #6254C9);
-    color: white;
-  }
-
-
-  #signInInvitation button, #signUpInvitation button{
-    width: 12em;
-    height: 4em;
-    border-radius: 6px;
-    background: transparent;
-    color: white;
-    border: 2px white solid;
-    margin-top: 4em;
-  }
-
-
-
-
-@media screen and (min-width: 0) and (max-width: 550px) {
-  #signContent{
-    display: none;
-  }
-  #phoneDisplay{
-    display: block;
-    margin: 7em auto 0 auto;
-    height: 33em;
-    width: 97%;
-    justify-content: center;
-    text-align: center;
-    color: white;
-    font-family: Bahnschrift,serif;
-  }
-
-  #phoneSignIn input, #phoneSignUp input{
-    width: 80%;
-    margin: 1.5em auto 0 auto;
-    font-size: 1.3em;
-    padding:.4em;
-    border: none;
-    box-shadow: 6px 6px 8px #171717;
-    border-radius: 10px;
-  }
-
-  #phoneSignIn h1, #phoneSignUp h1{
-    width: 90%;
-    margin: 0 auto;
-    background: linear-gradient(30deg, #F166B3, #6254C9);
-    padding: .5em 0 .5em 0;
-    border-radius: 10px;
-    box-shadow: 6px 6px 8px #171717;
-  }
-
-  #phoneSignIn button, #phoneSignUp button{
-    margin-top: 2em;
-    width: 10em;
-    height: 4em;
-    border-radius: 10px;
-    background: linear-gradient(30deg, #F166B3, #6254C9);
-    color: white;
-    box-shadow: 6px 6px 8px #171717;
-    font-size: 1em;
-    border: none;
-  }
-
-  span{
-    text-decoration: underline;
-  }
-
+.Hover:hover{
+  text-decoration: underline;
+  cursor: pointer;
 }
+
 
 
 </style>

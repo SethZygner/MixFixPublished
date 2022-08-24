@@ -4,15 +4,15 @@
 
 <template>
 
-  <div class="card" >
+  <div class="card my-3" >
 
-    <div class="Image">
 
-      <slot name="Image-Slot">
-        <img src="../assets/Image_1.png" class="card-img-top" alt="...">
+      <slot name="Image-Slot" class="card-img-top">
+          <img src="../assets/Image_1.png" class="img-fluid" alt="...">
       </slot>
 
-    </div>
+
+
 
 
     <div class="card-body text-center">
@@ -39,6 +39,7 @@
 
 .card{
   box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
+  overflow: hidden;
 }
 
 

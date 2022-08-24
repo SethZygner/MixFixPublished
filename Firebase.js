@@ -1,8 +1,8 @@
-import { initializeApp } from "firebase/app";
 import {getAuth, createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut} from 'firebase/auth';
-import {getDatabase, ref, set, onValue, onChildAdded, update} from "firebase/database";
 import firebase from "firebase/compat";
-import { getStorage, ref as StorageRef, uploadBytes } from "firebase/storage";
+import {useRouter} from "vue-router/dist/vue-router.mjs";
+import {reactive, ref} from "vue";
+
 
 const firebaseConfig = {
     apiKey: "AIzaSyA59zeNwzGlJ8Zf9_5IoXRPLeUaEapzk0k",
@@ -14,152 +14,300 @@ const firebaseConfig = {
     appId: "1:1048303660430:web:2d2db683b7f1b8625a88df",
     measurementId: "G-6PKWDEPCBH"
 };
-
-
 firebase.initializeApp(firebaseConfig);
 
-let database = firebase.database;
+let FirestoreDB = firebase.firestore;
 
-async function newUser(Username, Email, Password, Description, ImageURL){
-    const checkUsername = firebase.database().ref();
-    let usernameTaken = false;
 
-   await checkUsername.child("users").get()
-        .then((snapshot)=>{
-            snapshot.forEach((user)=>{
-                if(user.val().Username === Username){
-                    usernameTaken = true;
-                }
-            });
-            if(!usernameTaken){
-                createUserWithEmailAndPassword(getAuth(), Email, Password)
-                    .then((result)=>{
-                        setTimeout(()=>{
-                            const reference = ref(database(), 'users/'+result.user.uid);
-                            set(reference, {
-                                Username: Username,
-                                Email: Email,
-                                ImageURL: ImageURL,
-                                Description: Description,
-                                Coins: 3,
-                                DrinksMade: 0,
-                                Followers: 0,
-                                Following: 0
-                            })
-                                .catch((err)=>{
-                                    alert(err.message);
-                                })
-                        }, 500);
-                    }).catch((err)=>{
-                    switch (err){
-                        case "auth/email-already-exists":
-                            alert("Email already exists!");
-                            break;
-                    }
+
+let UserInformation = reactive({});
+let Users = reactive([]);
+let LocalStorage = window.localStorage;
+let HasProfilePicture = ref(false);
+let LocalDrinks = reactive([]);
+let ErrorMessage = ref("");
+
+
+let d = new Date();
+
+onAuthStateChanged(getAuth(), ()=>{
+    if(getAuth().currentUser){
+        GetBasicUserInformation();
+        GetSavedDrinks();
+        GetMadeDrinks();
+    }
+})
+
+
+function NewUser(Username, Email, Password){
+    createUserWithEmailAndPassword(getAuth(), Email, Password)
+        .then((result)=>{
+            let UserID = result.user.uid;
+            FirestoreDB()
+                .collection("Mixers")
+                .doc(UserID)
+                .set({
+                    Email: Email,
+                    Username: Username,
+                    Date: d.getTime()/1000
                 })
-            }else{
-                alert("Name already taken!")
-            }
-        })
-}
-
-
-async function publicPost(message){
-
-    await database().ref().child("users").child(getAuth().currentUser.uid.toString()).get()
-        .then((user)=>{
-            database().ref('publicPosts/')
-                .push({
-                    Message: message,
-                    UserID: getAuth().currentUser.uid,
-                    Username: user.val().Username
-                })
-        })
-
-
-}
-
-function newDrink(drinkArray) {
-
-
-    //I know this looks gross with the duplicate code, but it's the only way I got the image to go into the database
-    let postKey = database().ref('publicDrinks/').push().key;
-    function checkIfImage(){
-        if(drinkArray[0].Image){
-            firebase.storage().ref("PublicDrinkImages/"+postKey).put(drinkArray[0].Image)
-                .then((snapshot)=>{
-                    snapshot.ref.getDownloadURL().then((URL)=>{
-                        drinkArray[0].Image = URL.toString();
-                        database().ref('users/'+getAuth().currentUser.uid+'/publicDrinks/'+postKey).set(drinkArray).then(()=>{
-                            database().ref('publicDrinks/'+postKey).set(drinkArray).then(()=>{
-                                let drinksMade = 0;
-                                database().ref('users/'+getAuth().currentUser.uid).get()
-                                    .then((result)=>{
-                                        drinksMade = result.val().DrinksMade+1
-                                        database().ref('users/'+getAuth().currentUser.uid).update({DrinksMade: drinksMade.valueOf()})
-                                    })
-                            });
-                        });
-                    });
-                });
-        }else{
-            database().ref('users/'+getAuth().currentUser.uid+'/publicDrinks/'+postKey).set(drinkArray).then(()=>{
-                database().ref('publicDrinks/'+postKey).set(drinkArray).then(()=>{
-                    let drinksMade = 0;
-                    database().ref('users/'+getAuth().currentUser.uid).get()
-                        .then((result)=>{
-                            drinksMade = result.val().DrinksMade+1
-                            database().ref('users/'+getAuth().currentUser.uid).update({DrinksMade: drinksMade.valueOf()})
+                .then(()=>{
+                    FirestoreDB()
+                        .collection("Mixers")
+                        .doc(UserID)
+                        .update({
+                            UserID: UserID
                         })
-                });
-            });
-        }
+                        .then(()=>{
+                            let router = useRouter();
+                            router.push('/');
+                        })
+
+
+                })
+        })
+}
+
+function SignInUser(Email, Password){
+    signInWithEmailAndPassword(getAuth(),Email, Password)
+        .catch((e)=>{
+            if(e.message === "Firebase: Error (auth/user-not-found)."){
+                ErrorMessage.value = "This user doesn't exist";
+            }
+
+        })
+}
+
+function PostDrink(DrinkObject){
+
+    if(DrinkObject.strDrinkThumb){
+        firebase.storage().ref("PublicDrinkImages/"+getAuth().currentUser.uid+'/'+DrinkObject.idDrink)
+            .put(DrinkObject.strDrinkThumb)
+            .then((snapshot)=>{
+                snapshot.ref.getDownloadURL()
+                    .then((URL)=>{
+                        DrinkObject.strDrinkThumb = URL.toString();
+                    })
+                    .then(()=>{
+
+                        SendDrink();
+                    })
+            })
+    }else{
+        SendDrink();
+    }
+
+    function SendDrink(){
+        FirestoreDB()
+            .collection("PublicDrinks")
+            .doc(DrinkObject.idDrink)
+            .set(DrinkObject)
+            .then(()=>{
+                FirestoreDB()
+                    .collection("Mixers")
+                    .doc(getAuth().currentUser.uid)
+                    .collection("PublicDrinks")
+                    .doc(ID)
+                    .set(DrinkObject)
+                    .then(()=>{
+                        GetMadeDrinks();
+                    });
+            })
     }
 
 
-    checkIfImage();
-
 
 }
 
-function AddToUserDrinkFavorites(data){
-    const UserFavorites = ref(database(), 'users/'+getAuth().currentUser.uid+'/UserDrinkFavorites/'+data.DrinkID);
-    set(UserFavorites, data);
-}
+function GetBasicUserInformation(){
+    //If this local storage doesn't have the user's information, call the database to create one to save amounts of reads and writes
+    if(!LocalStorage.getItem(getAuth().currentUser.uid+'-UserInformation')){
+        FirestoreDB().collection("Mixers")
+            .doc(getAuth().currentUser.uid)
+            .get()
+            .then((Mixer)=>{
+                LocalStorage.setItem(getAuth().currentUser.uid+'-UserInformation', JSON.stringify(Mixer.data()));
 
-async function CheckIfUserDrinkIsLiked(postID){
-    const CheckIfLiked = firebase.database().ref();
-    await CheckIfLiked.child('users').child(getAuth().currentUser.uid).child('UserDrinkFavorites').get()
-        .then((result)=>{
-            result.forEach((drink)=>{
-                if(postID === drink.key){
-                    return true;
+            })
+            .then(()=>{
+                UserInformation['GeneralInformation'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-UserInformation'));
+
+
+            })
+            .then(()=>{
+
+                if(UserInformation.GeneralInformation['ProfilePicture']){
+                    HasProfilePicture.value = true;
+
                 }
             })
-            return false;
+    }else{
+        UserInformation['GeneralInformation'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-UserInformation'));
+        if(UserInformation.GeneralInformation['ProfilePicture']){
+            HasProfilePicture.value = true;
+        }
+    }
+}
+
+function GetSavedDrinks(){
+    //If the local storage doesn't have the saved drinks or the updated version it will get it for later use
+    if(!LocalStorage.getItem(getAuth().currentUser.uid+'-SavedDrinks')){
+        FirestoreDB()
+            .collection("Mixers")
+            .doc(getAuth().currentUser.uid)
+            .collection("SavedDrinks")
+            .get()
+            .then((drinks)=>{
+                let SavedDrinksArray = [];
+                drinks.forEach((drink)=>{
+                    SavedDrinksArray.push(drink.data());
+                })
+                LocalStorage.setItem(getAuth().currentUser.uid+'-SavedDrinks', JSON.stringify(SavedDrinksArray));
+                UserInformation['SavedDrinks'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-SavedDrinks'));
+            })
+    }else{
+        UserInformation['SavedDrinks'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-SavedDrinks'));
+    }
+}
+
+function GetMadeDrinks(){
+    if(!LocalStorage.getItem(getAuth().currentUser.uid+'-MadeDrinks')){
+
+        FirestoreDB()
+            .collection("Mixers")
+            .doc(getAuth().currentUser.uid)
+            .collection("PublicDrinks")
+            .get()
+            .then((drinks)=>{
+                let MadeDrinksArray = [];
+                drinks.forEach((drink)=>{
+                    MadeDrinksArray.push(drink.data());
+                })
+                LocalStorage.setItem(getAuth().currentUser.uid+'-MadeDrinks', JSON.stringify(MadeDrinksArray));
+                UserInformation['MadeDrinks'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-MadeDrinks'));
+            })
+    }else{
+        UserInformation['MadeDrinks'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-MadeDrinks'));
+    }
+
+
+}
+
+
+
+function GetPublicDrinks(){
+    if(!LocalStorage.getItem('LastUpdatedPublicDrinks')){
+        FirestoreDB()
+            .collection("PublicDrinks")
+            .get()
+            .then((drinks)=>{
+                LocalDrinks.length = 0;
+                drinks.forEach((drink)=>{
+                    LocalDrinks.push(drink.data());
+
+                })
+                console.log(LocalDrinks);
+                LocalStorage.setItem('LastUpdatedPublicDrinks', JSON.stringify(LocalDrinks));
+            })
+    }else{
+        LocalDrinks.length = 0;
+        LocalDrinks.push(...JSON.parse(LocalStorage.getItem('LastUpdatedPublicDrinks')));
+    }
+
+}
+
+function GetAllUsers(){
+    if(!LocalStorage.getItem('AllUsers')){
+        FirestoreDB()
+            .collection("Mixers")
+            .get()
+            .then((data)=>{
+                data.forEach((Mixer)=>{
+                    Users.push({
+                        Username: Mixer.data().Username,
+                        ...Mixer.data().ProfilePicture && {
+                            ProfilePicture: Mixer.data().ProfilePicture
+                        },
+                        UserID: Mixer.id
+                    })
+                })
+            })
+            .then(()=>{
+                LocalStorage.setItem('AllUsers', JSON.stringify(Users));
+            })
+    }else{
+        Users.push(...JSON.parse(LocalStorage.getItem('AllUsers')));
+    }
+
+}
+
+function AddDrinkToFavorites(drink){
+    LocalStorage.removeItem(getAuth().currentUser.uid+'-SavedDrinks');
+    FirestoreDB()
+        .collection('Mixers')
+        .doc(getAuth().currentUser.uid)
+        .collection('SavedDrinks')
+        .doc(drink.idDrink)
+        .set(drink)
+        .then(()=>{
+            GetSavedDrinks();
         })
 }
 
-async function UnAddUserFavorite(postID){
-    await database().ref().child('users').child(getAuth().currentUser.uid).child('UserDrinkFavorites').child(postID).remove().then((result)=>{
-        console.log("Removed");
-    }).catch((err)=>{
-        console.log("Not deleted")
-    });
+function RemoveDrinkFromFavorites(drink){
+    FirestoreDB().collection("Mixers")
+        .doc(getAuth().currentUser.uid)
+        .collection('SavedDrinks')
+        .doc(drink.idDrink)
+        .delete()
+        .then(()=>{
+            LocalStorage.removeItem(getAuth().currentUser.uid+'-SavedDrinks');
+            GetSavedDrinks();
+        })
+}
+
+GetAllUsers();
+GetPublicDrinks();
+
+
+//Admin Functions
+function ToggleUserInformation(action){
+    switch (action) {
+        case 'Add':
+            FirestoreDB()
+                .collection("Mixers")
+                .get()
+                .then((query)=>{
+                    query.forEach((doc)=>{
+                        doc.ref.update({
+                            DrinksMade: 0
+                        })
+                    })
+                })
+        break;
+    }
 }
 
 
 
 //Function exports
 export default {
-    firebase,
-    newUser,
-    getAuth,
-    onAuthStateChanged,
-    publicPost,
-    newDrink,
+    //These are functions
+    NewUser,
     signOut,
-    AddToUserDrinkFavorites,
-    UnAddUserFavorite,
-    database
+    PostDrink,
+    GetBasicUserInformation,
+    GetPublicDrinks,
+    AddDrinkToFavorites,
+    RemoveDrinkFromFavorites,
+    SignInUser,
+
+    //These are variables
+    firebase,
+    FirestoreDB,
+    UserInformation,
+    HasProfilePicture,
+    Users,
+    LocalDrinks,
+    ErrorMessage
 }

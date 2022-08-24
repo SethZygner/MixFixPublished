@@ -1,295 +1,327 @@
 <script setup>
-//Imports
 import {reactive, ref} from "vue";
-import DrinkCard from "../Slots/DrinkCard.vue"
-import DrinkInformationCard from "../Slots/DrinkInformationCard.vue";
-import {Swiper, SwiperSlide} from "swiper/vue";
-import 'swiper/css/bundle'
+import fire from '../../Firebase.js';
+import DrinkCard from '../Slots/DrinkCard.vue';
+import DrinkInformation from '../Slots/DrinkInformationCard.vue';
+import PhoneDrinkInformation from '../Slots/PhoneDrinkInformationCard.vue'
+import DRINKS from '../Drinks.json';
+import {getAuth, onAuthStateChanged} from "firebase/auth";
 
 
-//Misc
+
+//=========================================== I/O ===========================================//
+
+let ShowIngredientsAdded = ref(false);
+let DrinkSaved = ref(false);
+let ShowSaveButton = ref(false);
+
+
+//========================================== Inputs ==========================================//
+
+let Enter_Ingredient_Input = ref("");
+
+
+//===================================== Arrays and Objects =====================================//
+
+let Filterable_Drinks = reactive([]); //A list of filtered drinks after the filter
+let alphabetical = ref(true); //Checks weather the list is in alphabetical order or not
+let SelectedDrink = reactive([]); // Filled with a selected drink's information
+let Ingredients_Searched_For = reactive([]);
+
+
+//Arrays of Filters
+let Glass = reactive([]); //Different Glass Filter Options
+let Category = reactive([]); //Category Options
+
+//=================================== Initial Functions to Run ===================================//
+
+//Scroll to the top automatically when page is loaded
 window.scrollTo(0, 0);
 
-
-
-//API Links
-
-
-let popularDrinks = "https://www.thecocktaildb.com/api/json/v2/9973533/popular.php";
-let Drinks = reactive([]);
-let DrinkInfo = reactive([]);
-let IngredientListAPI = reactive([]);
-let Ingredient = ref("");
-
-let DrinkName = ref("");
-
-let showIngredients = ref(false);
-let searchByIngredient = ref(false);
-
-
-
-function getByIngredient(){
-  Drinks.length = 0;
-  if(IngredientListAPI.length){
-    let multipleIngredientUrl = "https://www.thecocktaildb.com/api/json/v2/9973533/filter.php?i=";
-    multipleIngredientUrl += IngredientListAPI.toString();
-    Ingredient.value = "";
-    fetch(multipleIngredientUrl)
-        .then((result)=>{
-          return result.json();
-        })
-        .then((compData)=>{
-          if(compData.drinks !== "None Found" || compData.drinks)
-          Drinks.push(...compData.drinks);
-        })
+onAuthStateChanged(getAuth(), ()=>{
+  if(getAuth().currentUser){
+    ShowSaveButton.value = true;
   }
-}
-
-function IngredientManipulation(action, index){
-
-  switch (action){
-    case "Add":
-      if(Ingredient.value){
-        DrinkName.value = "";
-        IngredientListAPI.push(Ingredient.value);
-
-      }
-      getByIngredient();
-      break;
+})
 
 
-    case "Remove":
-        IngredientListAPI.splice(index, 1);
-        if(IngredientListAPI.length){
-          getByIngredient();
-        }else {
-          getPopularDrinks();
-        }
-
-      break;
-
-
+//Get Filter Options
+DRINKS.forEach((drink)=>{
+  if(!Glass.includes(drink.strGlass)){
+    Glass.push(drink.strGlass);
+    Glass.sort();
   }
+  if(!Category.includes(drink.strCategory)){
+    Category.push(drink.strCategory);
+    Category.sort();
+  }
+})
 
+//Drink sorting functions
+function SortArray(x, y){
+  return x.strDrink.localeCompare(y.strDrink, 'en', { sensitivity: 'base' });
 }
+function SortAlphabetically(){
+  alphabetical.value = !alphabetical.value;
 
-function specificDrinkClicked(index){
-  DrinkInfo.length = 0;
-  let getByIdURL = "https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i="+Drinks[index].idDrink;
-  fetch(getByIdURL)
-  .then((result)=>{
-    return result.json();
-  })
-  .then((compData)=>{
-    cleanData(compData.drinks[0]);
-
-  });
-
-}
-
-function cleanData(data){
-  let Ingredients = [];
-
-  //Gets rid of all null data
-  Object.keys(data).forEach((key)=>{
-    if(!data[key]){
-      delete data[key];
+  if(alphabetical.value){
+    if(Filterable_Drinks.length){
+      Filterable_Drinks.sort(SortArray);
     }
-  });
-
-  //Separate the ingredients and measurements
-  for(let i = 1; i <= 15; i++){
-    if(("strIngredient"+i.toString()) in data){
-      if(data["strMeasure"+i.toString()]){
-        Ingredients.push({Ingredient: data["strIngredient"+i.toString()], Measurement: data["strMeasure"+i.toString()]})
-      }else{
-        Ingredients.push({Ingredient: data["strIngredient"+i.toString()], Measurement: "User's Choice"})
-      }
-    }
-  }
-
-  let GeneralInfo = [{
-    DrinkName: data.strDrink,
-    Image: data.strDrinkThumb,
-    Instructions: data.strInstructions
-  }]
-
-  DrinkInfo.push(Ingredients, ...GeneralInfo)
-  console.log(DrinkInfo);
-
-}
-
-function getPopularDrinks(){
-  Drinks.length = 0;
-  fetch(popularDrinks)
-  .then((result)=>{
-    return result.json();
-  })
-  .then((compData)=>{
-    Drinks.push(...compData.drinks);
-    console.log(Drinks);
-  })
-}
-
-function clearIngredients(){
-  IngredientListAPI.length = 0;
-  IngredientManipulation('Remove');
-}
-
-function getByDrinkName(){
-  if(DrinkName.value.length){
-    IngredientListAPI.length = 0;
-    Drinks.length = 0;
-    let searchByName = "https://www.thecocktaildb.com/api/json/v1/1/search.php?s=";
-
-    fetch(searchByName+DrinkName.value)
-        .then((result)=>{
-          return result.json();
-        })
-        .then((compData)=>{
-          Drinks.push(...compData.drinks);
-
-
-        })
+    DRINKS.sort(SortArray)
   }else{
-    getPopularDrinks();
+    if(Filterable_Drinks.length){
+      Filterable_Drinks.sort(SortArray).reverse();
+    }
+    DRINKS.sort(SortArray).reverse();
   }
-
 }
 
 
+//When a drink is clicked, this function displays it into the SelectedDrink array
+function GetDrinkInfo(index){
 
-getPopularDrinks();
+  let SavedDrinksArray = fire.UserInformation.SavedDrinks;
+
+  if(Filterable_Drinks.length){
+    SelectedDrink.push(Filterable_Drinks[index]);
+  }else{
+    SelectedDrink.push(DRINKS[index]);
+  }
+
+
+  SavedDrinksArray.forEach((drink)=>{
+    if(SelectedDrink[0].idDrink === drink.idDrink){
+      DrinkSaved.value = true;
+    }
+  })
+
+}
+
+function FilterByIngredients(){
+
+  //This Searches by Ingredients Entered
+  if(Ingredients_Searched_For.length){
+
+    const items = DRINKS.filter((cocktail) => {
+      return Ingredients_Searched_For.every((ing) => {
+        return cocktail.Ingredients.find(cocIng => cocIng.Ingredient.toLowerCase().includes(ing.toLowerCase()))
+      })
+    })
+    Filterable_Drinks.length = 0;
+    Filterable_Drinks.push(...items);
+  }else{
+    Filterable_Drinks.length = 0;
+  }
+}
+
+function DeleteIngredient(index){
+  Ingredients_Searched_For.splice(index, 1);
+  Enter_Ingredient_Input.value = "";
+  FilterByIngredients();
+}
+
+
+function AddIngredient(){
+  if(Enter_Ingredient_Input.value){
+    Ingredients_Searched_For.push(Enter_Ingredient_Input.value);
+    Enter_Ingredient_Input.value = "";
+    FilterByIngredients();
+  }
+}
+
+function DeleteAllIngredients(){
+  Ingredients_Searched_For.length = 0;
+  FilterByIngredients();
+}
+
+function SaveToFavorites(){
+  fire.AddDrinkToFavorites(SelectedDrink[0]);
+  DrinkSaved.value = true;
+}
+
+function RemoveFromFavorites(){
+  fire.RemoveDrinkFromFavorites(SelectedDrink[0]);
+  DrinkSaved.value = false;
+}
+
+function ExitSelectedDrink(){
+  SelectedDrink.length = 0;
+  DrinkSaved.value = false;
+}
+
 
 </script>
 
-
-
-
-
-
 <template>
+<!--======================================= Overlays And Selected Drinks =================================== -->
+  <div class="Black-Overlay" v-if="SelectedDrink.length" @click="ExitSelectedDrink()"></div>
+
+  <div v-if="SelectedDrink.length" id="Drink-Information">
+    <DrinkInformation  >
+      <template #Drink-Image>
+        <img :src="SelectedDrink[0].strDrinkThumb" class="Pop-Up-Drink-Image img-fluid"  alt="">
+      </template>
+
+      <template #Drink-Name>
+        <h3>{{SelectedDrink[0].strDrink}}</h3>
+      </template>
+
+      <template #SaveDrinkButton>
+        <div v-if="ShowSaveButton">
+          <div @click="RemoveFromFavorites" v-if="DrinkSaved" class="simple-input-sm d-flex align-items-center justify-content-center mx-auto Hover">Unsave</div>
+          <div v-else @click="SaveToFavorites" class="simple-input-sm d-flex align-items-center justify-content-center mx-auto Hover">Save Drink</div>
+        </div>
+
+      </template>
+
+      <template #Ingredients>
+        <div class="col-md-4 col-5" v-for="ingredients in SelectedDrink[0].Ingredients">
+          <p>{{ingredients.Ingredient}} - {{ingredients.Measurement}}</p>
+        </div>
+      </template>
+
+      <template #Instructions>
+        <p>{{SelectedDrink[0].strInstructions}}</p>
+      </template>
+    </DrinkInformation>
+  </div>
+
+  <div v-if="SelectedDrink.length" id="Phone-Drink-Information">
+    <PhoneDrinkInformation>
+      <template #Drink-Image>
+        <img :src="SelectedDrink[0].strDrinkThumb" class="img-fluid" alt="">
+      </template>
+
+      <template #Drink-Name>
+        <h3><b>{{SelectedDrink[0].strDrink}}</b></h3>
+      </template>
 
 
-  <div class="offcanvas offcanvas-top" tabindex="-1" id="offcanvasTop" aria-labelledby="offcanvasTopLabel">
+      <template #Ingredients>
+        <div class="col-10 text-center mx-auto" v-for="ingredients in SelectedDrink[0].Ingredients">
+          <p>{{ingredients.Ingredient}} - {{ingredients.Measurement}}</p>
+        </div>
+      </template>
+
+      <template #SaveDrinkButton>
+        <div v-if="ShowSaveButton">
+          <div @click="RemoveFromFavorites" v-if="DrinkSaved" class="simple-input-sm d-flex align-items-center justify-content-center mx-auto Hover">Unsave</div>
+          <div v-else @click="SaveToFavorites" class="simple-input-sm d-flex align-items-center justify-content-center mx-auto Hover">Save Drink</div>
+        </div>
+      </template>
+
+    </PhoneDrinkInformation>
+  </div>
+
+
+
+
+  <div class="offcanvas offcanvas-bottom mr-0"  tabindex="-1" id="offcanvasBottom" >
     <div class="offcanvas-header">
-      <h5 id="offcanvasTopLabel">Ingredients Entered</h5>
+
+      <h5 class="offcanvas-title">Filters</h5>
+
       <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-    </div>
-    <div class="offcanvas-body text-center">
-      <div class="row row-cols-2 justify-content-evenly g-2">
-        <div class="col-md-5 col-8 row row-cols-2 my-3 justify-content-evenly" id="Ingredients">
-          <div @click="IngredientManipulation('Remove', IngredientListAPI.indexOf(item))"  class="col-5" id="Ing" v-for="item in IngredientListAPI">{{item}}</div>
-        </div>
-        <div class="col-8 col-md-5">
-          <button class="btn btn-outline-dark my-3" @click="clearIngredients">Clear</button>
-        </div>
-      </div>
 
+    </div>
+    <div class="offcanvas-body d-flex">
+      <select>
+
+      </select>
+
+      <select name="" id="">
+
+      </select>
     </div>
   </div>
 
 
-  <div class="Overlay"  v-if="DrinkInfo.length || showIngredients" @click="DrinkInfo.length=0;">
 
-  </div>
+<!--============================================== Main Content ============================================== -->
+  <div class="container-fluid text-center">
 
+    <div class="my-3">
+      <div class="d-flex col-md-4 col-10 mx-auto">
 
-
-  <div class="container-fluid row row-flex mt-3 mx-auto justify-content-between text-center col-12" id="Filter-Input">
-
-    <div class="col-lg-8 col-md-10 mx-auto">
-      <div class="input-group mb-3" v-if="searchByIngredient">
-        <div class="input-group-prepend hover">
-          <span class="input-group-text" @click="searchByIngredient = !searchByIngredient"><img src="../assets/IngredientIcon.png" class="img-fluid" width="25" alt=""></span>
+        <input type="text" placeholder="Enter Ingredient" class="simple-input-left-radius" v-model="Enter_Ingredient_Input" @keydown.enter="AddIngredient">
+        <div class="simple-input-sm-right-radius d-flex align-items-center justify-content-center">
+          <div class="px-4" @click="AddIngredient">Add</div>
         </div>
-        <input type="text" class="form-control" placeholder="Enter Ingredient" @keyup.enter="IngredientManipulation('Add')" v-model="Ingredient">
-        <div class="input-group-append hover" data-bs-toggle="offcanvas" data-bs-target="#offcanvasTop" aria-controls="offcanvasTop">
-          <span class="input-group-text">({{IngredientListAPI.length}}) Ingredients</span>
-        </div>
+
+      </div>
+      <hr>
+      <div v-if="Ingredients_Searched_For.length">
+        <p class="P-Hover" v-if="!ShowIngredientsAdded" @click="ShowIngredientsAdded = true;">Show Ingredients Added +</p>
+        <p class="P-Hover" v-else @click="ShowIngredientsAdded = false;">Hide Ingredients -</p>
       </div>
 
-      <div class="input-group mb-3" v-else>
-        <div class="input-group-prepend" >
-          <span class="input-group-text hover" @click="searchByIngredient = !searchByIngredient"><img src="../assets/DrinkIcon.jpg" class="img-fluid" width="25" alt=""></span>
+
+      <div id="ShownIngredients" class="row" v-if="Ingredients_Searched_For.length && ShowIngredientsAdded">
+        <div  class=" px-5 text-center col-md-3 col-6" v-for="ingredient in Ingredients_Searched_For">
+          <h4 @click="DeleteIngredient(Ingredients_Searched_For.indexOf(ingredient))" class="P-Hover ">{{ingredient}} </h4>
+
         </div>
-        <input @input="getByDrinkName" type="text" class="form-control" placeholder="Enter Drink Name" v-model="DrinkName">
+        <div class="col-12">
+          <button @click="DeleteAllIngredients">Clear All</button>
+        </div>
+
       </div>
+
+
+
+
+<!--      <button class="p-2"  data-bs-toggle="offcanvas" data-bs-target="#offcanvasBottom" aria-controls="offcanvasBottom"><b>Filters</b></button>-->
+
     </div>
 
-    <p v-if="searchByIngredient"><b>Note:</b> Click the<img src="../assets/IngredientIcon.png" width="20" class="img-fluid mx-2" alt="">to search by drink name</p>
-    <p v-else><b>Note:</b> Click the<img src="../assets/DrinkIcon.jpg" width="20" class="img-fluid mx-2" alt="">to search by ingredients</p>
 
-  </div>
 
-<!--  Drink Displays-->
 
-  <div class="row justify-content-evenly container-fluid mx-auto ">
+    <!-- ++++++++++++++++++++++++++++++++++++++ Shows List of Drinks and Filtered Drinks ++++++++++++++++++++++++++++++++++++++-->
 
-    <div class="col-md-7 col-12 mt-3" id="DrinkDisplay">
-      <div v-if="Drinks.length" class="row row-cols-lg-4 row-cols-md-3 row-cols-2 gy-3 p-3">
-        <div v-for="item in Drinks">
-          <DrinkCard id="Drink" class="hover" @click="specificDrinkClicked(Drinks.indexOf(item))">
-            <template #DrinkName-Slot>
-              {{item.strDrink}}
-            </template>
+    <div class="  p-3" id="Drink-List-View">
+
+      <!-- Create a row that is responsive for a phone view as well. 3 columns on wide screen, 2 columns on a phone screen -->
+      <div class="row justify-content-evenly display-flex" >
+
+        <!-- For every drink in the Drinks.json, show a drink card of it in the list -->
+        <div v-if="!Filterable_Drinks.length" class="col-md-2 col-6" v-for="drink in DRINKS">
+          <DrinkCard class="mb-5 Hover" @click="GetDrinkInfo(DRINKS.indexOf(drink))">
             <template #Image-Slot>
-              <img :src="item.strDrinkThumb" class="img-fluid" alt="">
+              <img :src=drink.strDrinkThumb class="img-fluid" alt="">
+            </template>
+            <template #DrinkName-Slot>
+              <div style="overflow: hidden;">
+                <h6>{{drink.strDrink}}</h6>
+              </div>
+
             </template>
           </DrinkCard>
         </div>
-      </div>
 
-      <div v-if="!Drinks.length && IngredientListAPI.length">
-        <h2>Nothing seems to match your criteria! Delete some ingrediets or add different ones!</h2>
-      </div>
-
-    </div>
-
-    <div class="col-md-5" id="Web-Shown-Drink-Info">
-        <DrinkInformationCard v-if="DrinkInfo.length" style="width: 65%; margin-top: -3em">
-          <template #Card-Title>{{DrinkInfo[1].DrinkName}}</template>
-          <template #Image>
-            <img :src="DrinkInfo[1].Image" class="img-fluid" alt="">
-          </template>
-          <template #Ingredients-And-Measurements>
-            <li v-for="item in DrinkInfo[0]" class="list-group-item">{{item.Ingredient}} ({{item.Measurement}})</li>
-          </template>
-          <template #Instructions>
-            <h4>{{DrinkInfo[1].Instructions}}</h4>
-          </template>
-        </DrinkInformationCard>
-
-        <div v-else class="pt-5 text-center">
-          <h3>Select a drink to find out how to make it!</h3>
-          <p class="my-5">Here, you will see the ingredients as well as the instructions on the drink you select!<br>
-            If you have an account, you will be able to favorite the selected drink so you can find it easier later!</p>
+        <div v-else class="col-md-2 col-6" v-for="drink in Filterable_Drinks">
+          <DrinkCard class="mb-5 Hover" @click="GetDrinkInfo(Filterable_Drinks.indexOf(drink))">
+            <template #Image-Slot>
+              <img  :src=drink.strDrinkThumb class="img-fluid" alt="">
+            </template>
+            <template #DrinkName-Slot>
+              <div style="overflow: hidden;">
+                <h6>{{drink.strDrink}}</h6>
+              </div>
+            </template>
+          </DrinkCard>
         </div>
 
+      </div>
+
     </div>
 
-  </div>
 
 
-  <div class="mx-auto" id="Phone-Shown-Drink-Info" v-if="DrinkInfo.length">
-    <DrinkInformationCard >
-      <template #Card-Title>{{DrinkInfo[1].DrinkName}}</template>
-      <template #Image>
-        <img :src="DrinkInfo[1].Image" class="img-fluid" alt="">
-      </template>
-      <template #Ingredients-And-Measurements>
-        <li v-for="item in DrinkInfo[0]" class="list-group-item">{{item.Ingredient}} ({{item.Measurement}})</li>
-      </template>
-      <template #Instructions>
-        <h4>{{DrinkInfo[1].Instructions}}</h4>
-      </template>
-    </DrinkInformationCard>
 
 
   </div>
-
-
-
 
 
 </template>
@@ -300,94 +332,52 @@ getPopularDrinks();
 
 <style scoped>
 
-.row-flex{
-  display: flex;
-  flex-wrap: wrap;
-}
 
-#Ingredients{
-  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
-  min-height: 5em;
-  height: fit-content;
-  padding: .5em;
-  border-radius: 10px;
-}
-
-#Ing{
-  color: white;
-  height: fit-content;
-  padding: 1em;
-  border-radius: 10px;
-  background: linear-gradient(30deg, #F166B3, #6254C9);
-}
-
-#DrinkDisplay{
-  max-height: 30em;
+#Drink-List-View{
+  max-height: 37em;
   overflow-y: scroll;
-  overflow-x: hidden;
 }
 
 
-.hover:hover{
-  cursor: pointer;
+#Drink-Information{
+  position: fixed; z-index: 2000;
+  height: 80%;
 }
 
-#Phone-Shown-Drink-Info{
+#Phone-Drink-Information{
   display: none;
 }
 
-.Overlay{
+.Phone-Filters{
   display: none;
 }
 
-.offcanvas{
-  min-height: 25em;
-}
 
-@media screen and (min-width: 0) and (max-width: 1236px){
-  #Web-Shown-Drink-Info{
-    display: none !important;
+
+
+
+
+@media screen and (max-width: 767px){
+
+  /*Regular Drink Information is Hidden when seen on a phone*/
+  #Drink-Information{
+    display: none;
   }
 
-  #Phone-Shown-Drink-Info{
-    display: block !important;
-    z-index: 201;
-    position: fixed;
-    top: 5em;
-    left: 0;
-    right: 0;
-    width: 35%;
+  #Phone-Drink-Information{
+    display: contents;
   }
 
-  .Overlay{
-    display: block !important;
-    position: fixed;
-    background-color: rgba(0, 0, 0, .8);
-    width: 100%;
-    height: 100%;
-    top: 0;
-    z-index: 200;
+  #Drink-List-View{
+    max-height: 45em;
   }
 
 
-}
-
-@media screen and (min-width: 0) and (max-width: 925px){
-  #Phone-Shown-Drink-Info{
-    width: 50%;
+  .Phone-Filters{
+    display: contents;
   }
-}
 
-@media screen and (min-width: 0) and (max-width: 615px){
-  #Phone-Shown-Drink-Info{
-    width: 70%;
-  }
-}
 
-@media screen and (min-width: 0) and (max-width: 400px){
-  #Phone-Shown-Drink-Info{
-    width: 90%;
-  }
 }
 
 
