@@ -5,7 +5,6 @@ import {onMounted, ref} from "vue";
 import AOS from "aos";
 import fire from '../Firebase.js'
 
-let HasUserInformation = ref(false);
 
 let LocalStorage = window.localStorage;
 
@@ -44,7 +43,7 @@ onAuthStateChanged(getAuth(),()=>{
         <h6 class="mx-5 mt-4" data-bs-dismiss="offcanvas"><RouterLink to="/browseCocktails" active-class="active">Browse</RouterLink></h6>
         <h6 class="mx-5 mt-4" data-bs-dismiss="offcanvas"><RouterLink to="/socialHub" active-class="active">Social Hub</RouterLink></h6>
         <h6 v-if="signedIn" class="mx-5 mt-2"><RouterLink to="/account" data-bs-dismiss="offcanvas" active-class="active">
-          <img v-if="fire.HasProfilePicture" @click="router.push('/account')" class="ProfilePicture" :src="fire.UserInformation.GeneralInformation.ProfilePicture" alt="">
+          <img v-if="fire.UserInformation.length && 'ProfilePicture' in fire.UserInformation[0]" @click="router.push('/account')" class="ProfilePicture" :src="fire.UserInformation[0].ProfilePicture" alt="">
           <h6 v-else @click="router.push('/account')">Account</h6>
         </RouterLink></h6>
         <h6 v-else class="mx-5 mt-4" data-bs-dismiss="offcanvas"><RouterLink to="/signIn" active-class="active">Login</RouterLink></h6>
@@ -65,7 +64,7 @@ onAuthStateChanged(getAuth(),()=>{
       <h6 class="mx-5 mt-4"><RouterLink to="/browseCocktails" active-class="active">Browse</RouterLink></h6>
       <h6 class="mx-5 mt-4"><RouterLink to="/socialHub" active-class="active">Social Hub</RouterLink></h6>
       <h6 v-if="signedIn" class="mx-5 mt-2"><RouterLink to="/account" active-class="active">
-        <img v-if="fire.HasProfilePicture" class="ProfilePicture" :src="fire.UserInformation.GeneralInformation.ProfilePicture" alt="">
+        <img v-if="fire.UserInformation.length && 'ProfilePicture' in fire.UserInformation[0]" class="ProfilePicture" :src="fire.UserInformation[0].ProfilePicture" alt="">
         <h6 v-else>Account</h6>
       </RouterLink></h6>
       <h6 v-else class="mx-5 mt-4"><RouterLink to="/signIn" active-class="active">Login</RouterLink></h6>

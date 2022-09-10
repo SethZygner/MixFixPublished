@@ -81,7 +81,7 @@ function SortAlphabetically(){
 //When a drink is clicked, this function displays it into the SelectedDrink array
 function GetDrinkInfo(index){
 
-  let SavedDrinksArray = fire.UserInformation.SavedDrinks;
+  let SavedDrinksArray = fire.UserInformation[1];
 
   if(Filterable_Drinks.length){
     SelectedDrink.push(Filterable_Drinks[index]);

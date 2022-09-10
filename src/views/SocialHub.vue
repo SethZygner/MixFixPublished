@@ -8,21 +8,13 @@
   import PhoneDrinkInformation from '../Slots/PhoneDrinkInformationCard.vue';
 
 
-
-
-  let LocalStorage = window.localStorage;
-
   let PostImage = ref("");
 
   let UserSearchInput = ref("");
 
   let Discover = ref(true);
 
-  let signedIn = ref(false);
-
   let router = useRouter();
-
-  let AllDrinks = reactive([]);
 
   let SelectedDrink = reactive([]);
 
@@ -30,84 +22,24 @@
 
   let RefreshAllowed = ref(false);
 
-  let RefreshNumber = ref(3);
-
   let Saved = ref(false);
 
 
   function GetDrinkInfo(index){
     SelectedDrink.length = 0;
     SelectedDrink.push(fire.LocalDrinks[index]);
-
   }
 
-  function ShowFriends(){
+  function ShowUsers(){
     UserList.length = 0;
     if(UserSearchInput.value){
 
-      let arr = JSON.parse(LocalStorage.getItem('AllUsers'));
 
-      Object.values(arr).forEach((user)=>{
+      fire.Users.forEach((user)=>{
         if(user.Username.toLowerCase().includes(UserSearchInput.value.toLowerCase())){
           UserList.push(user);
         }
       })
-
-    }
-  }
-
-  function SaveDrink(){
-
-  }
-
-
-
-  onAuthStateChanged(getAuth(),()=>{
-    if(getAuth().currentUser){
-      signedIn.value = true;
-      setTimeout(()=>{
-        fire.GetPublicDrinks();
-      },2000);
-
-    }
-  });
-
-
-
-  setInterval(()=>{
-    if(LocalStorage.getItem('LimitRefresh')){
-      let Limit = JSON.parse(LocalStorage.getItem('LimitRefresh'));
-
-      let PassedTime = Date.now() - Limit.Time;
-
-      RefreshNumber.value = 3-Limit.Amount;
-
-
-      if(Limit.Amount === 3){
-        RefreshAllowed.value = false;
-      }
-
-      if(PassedTime > (24*60*60)){
-        RefreshAllowed.value = true;
-        LocalStorage.removeItem('LimitRefresh');
-      }
-
-    }else{
-      RefreshAllowed.value = true;
-    }
-  }, 100);
-
-  function LimitRefresh(){
-    if(!LocalStorage.getItem('LimitRefresh')){
-      LocalStorage.setItem('LimitRefresh', JSON.stringify({Amount: 1, Time: Date.now()}));
-      console.log(JSON.parse(LocalStorage.getItem('LimitRefresh')))
-    }else{
-      let Limit = JSON.parse(LocalStorage.getItem('LimitRefresh'));
-      console.log(Limit)
-      if((3-Limit.Amount) !== 0){
-        LocalStorage.setItem('LimitRefresh', JSON.stringify({Amount: Limit.Amount += 1, Time: Date.now()}));
-        fire.GetPublicDrinks();
-      }
 
     }
   }
@@ -168,12 +100,12 @@
 
 
 <!------------------------------------------------------- Left Options --------------------------------------------------->
-      <div class="Left-Panel-Profile col-md-2 py-3" v-if="signedIn && fire.UserInformation.GeneralInformation">
+      <div class="Left-Panel-Profile col-md-2 py-3" v-if="getAuth().currentUser && fire.UserInformation[0]">
 
         <div class="col-12 mb-4 d-flex align-items-center">
-          <img v-if="fire.HasProfilePicture" :src="fire.UserInformation.GeneralInformation.ProfilePicture" class="Left-Panel-Picture" alt="">
+          <img v-if="fire.HasProfilePicture" :src="fire.UserInformation[0].ProfilePicture" class="Left-Panel-Picture" alt="">
           <img v-else src="../assets/Icons/usernameIcon.png" class="Left-Panel-Picture" alt="">
-          <h4 class="Left-Panel-Username ml-3 P-Hover" @click="router.push('/account')">{{ fire.UserInformation.GeneralInformation.Username }}</h4>
+          <h4 class="Left-Panel-Username ml-3 P-Hover" @click="router.push('/account')">{{ fire.UserInformation[0].Username }}</h4>
         </div>
 
 <!-------------------- This is going to be when I get the social aspect down more ------------------>
@@ -213,7 +145,7 @@
 
 
 
-      <div v-if="Discover" class="Feed col-md-6 p-0 row justify-content-evenly">
+      <div v-if="Discover" class="Feed col-md-9 p-0 row justify-content-evenly">
 
 
 
@@ -221,12 +153,6 @@
           <div class="row justify-content-evenly">
             <div class="col-11 col-sm-6 col-md-5 mb-3 mb-md-0" v-if="getAuth().currentUser">
               <div @click="router.push('/createDrink')" class="simple-input pt-2 mx-auto Hover ">Create A Drink</div>
-            </div>
-            <div class="col-11 col-md-5 col-sm-6">
-              <div v-if="RefreshAllowed"  @click="LimitRefresh" class="simple-input pt-2 mx-auto Hover ">
-                Refresh Drinks ({{RefreshNumber}})
-              </div>
-              <div v-else  class="false-simple-input-disabled pt-2 mx-auto Hover ">Refresh Drinks ({{RefreshNumber}})</div>
             </div>
 
           </div>
@@ -253,30 +179,35 @@
             </DrinkCard>
           </div>
 
-      </div>
-
-
-
-      <div v-if="!Discover" class="Friends-Column col-md-3 Web_View_Content">
-        <input type="text" maxlength="15" class="simple-input" placeholder="Search Mixers">
-        <hr>
-        <h5>Following</h5>
-        <hr>
-        <h5>Friends</h5>
-      </div>
-
-      <div v-if="Discover"  class="col-md-3 Web_View_Content">
-        <input type="text" maxlength="15" class="simple-input" placeholder="Search By Username" v-model="UserSearchInput" @input="ShowFriends" style="z-index: 3000">
-        <div id="DropDownUsers" v-if="UserList">
-          <div v-for="user in UserList" class="">
-            <p class="m-4 P-Hover">{{user.Username}}</p>
-          </div>
-
+        <div class=" col-md-4 col-6 d-flex justify-content-center text-center" v-else>
+          <div class="spinner-border mx-auto my-3" role="status"></div>
         </div>
-        <hr>
-        <h5>Filters</h5>
+
 
       </div>
+
+
+
+<!--      <div v-if="!Discover" class="Friends-Column col-md-3 Web_View_Content">-->
+<!--        <input type="text" maxlength="15" class="simple-input" placeholder="Search Mixers">-->
+<!--        <hr>-->
+<!--        <h5>Following</h5>-->
+<!--        <hr>-->
+<!--        <h5>Friends</h5>-->
+<!--      </div>-->
+
+<!--      <div v-if="Discover"  class="col-md-3 Web_View_Content">-->
+<!--        <input type="text" maxlength="15" class="simple-input" placeholder="Search By Username" v-model="UserSearchInput" @input="ShowUsers" style="z-index: 3000">-->
+<!--        <div id="DropDownUsers" v-if="UserList">-->
+<!--          <div v-for="user in UserList" class="">-->
+<!--            <p class="m-4 P-Hover">{{user.Username}}</p>-->
+<!--          </div>-->
+
+<!--        </div>-->
+<!--        <hr>-->
+<!--        <h5>Filters</h5>-->
+
+<!--      </div>-->
 
 
 <!------------------------------------------------------- Public Forums --------------------------------------------------->

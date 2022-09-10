@@ -20,12 +20,13 @@ let FirestoreDB = firebase.firestore;
 
 
 
-let UserInformation = reactive({});
+let UserInformation = reactive([]);
 let Users = reactive([]);
 let LocalStorage = window.localStorage;
 let HasProfilePicture = ref(false);
 let LocalDrinks = reactive([]);
 let ErrorMessage = ref("");
+let SavedDrinksArray = reactive([]);
 
 
 let d = new Date();
@@ -33,8 +34,6 @@ let d = new Date();
 onAuthStateChanged(getAuth(), ()=>{
     if(getAuth().currentUser){
         GetBasicUserInformation();
-        GetSavedDrinks();
-        GetMadeDrinks();
     }
 })
 
@@ -120,58 +119,35 @@ function PostDrink(DrinkObject){
 }
 
 function GetBasicUserInformation(){
-    //If this local storage doesn't have the user's information, call the database to create one to save amounts of reads and writes
-    if(!LocalStorage.getItem(getAuth().currentUser.uid+'-UserInformation')){
-        FirestoreDB().collection("Mixers")
-            .doc(getAuth().currentUser.uid)
-            .get()
-            .then((Mixer)=>{
-                LocalStorage.setItem(getAuth().currentUser.uid+'-UserInformation', JSON.stringify(Mixer.data()));
-
-            })
-            .then(()=>{
-                UserInformation['GeneralInformation'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-UserInformation'));
-
-
-            })
-            .then(()=>{
-
-                if(UserInformation.GeneralInformation['ProfilePicture']){
-                    HasProfilePicture.value = true;
-
-                }
-            })
-    }else{
-        UserInformation['GeneralInformation'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-UserInformation'));
-        if(UserInformation.GeneralInformation['ProfilePicture']){
-            HasProfilePicture.value = true;
-        }
-    }
+    //If this local storage doesn't have the user's information, call the database to create one to save amounts of reads and write
+    UserInformation.length = 0;
+    FirestoreDB().collection("Mixers")
+        .doc(getAuth().currentUser.uid)
+        .get()
+        .then((Mixer)=>{
+            UserInformation.push(Mixer.data());
+            GetSavedDrinks();
+            GetMadeDrinks();
+        })
 }
 
 function GetSavedDrinks(){
-    //If the local storage doesn't have the saved drinks or the updated version it will get it for later use
-    if(!LocalStorage.getItem(getAuth().currentUser.uid+'-SavedDrinks')){
         FirestoreDB()
             .collection("Mixers")
             .doc(getAuth().currentUser.uid)
             .collection("SavedDrinks")
             .get()
             .then((drinks)=>{
-                let SavedDrinksArray = [];
+                SavedDrinksArray = [];
                 drinks.forEach((drink)=>{
                     SavedDrinksArray.push(drink.data());
                 })
-                LocalStorage.setItem(getAuth().currentUser.uid+'-SavedDrinks', JSON.stringify(SavedDrinksArray));
-                UserInformation['SavedDrinks'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-SavedDrinks'));
+                UserInformation.push(SavedDrinksArray)
             })
-    }else{
-        UserInformation['SavedDrinks'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-SavedDrinks'));
-    }
+
 }
 
 function GetMadeDrinks(){
-    if(!LocalStorage.getItem(getAuth().currentUser.uid+'-MadeDrinks')){
 
         FirestoreDB()
             .collection("Mixers")
@@ -183,61 +159,33 @@ function GetMadeDrinks(){
                 drinks.forEach((drink)=>{
                     MadeDrinksArray.push(drink.data());
                 })
-                LocalStorage.setItem(getAuth().currentUser.uid+'-MadeDrinks', JSON.stringify(MadeDrinksArray));
-                UserInformation['MadeDrinks'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-MadeDrinks'));
+                UserInformation.push(MadeDrinksArray)
             })
-    }else{
-        UserInformation['MadeDrinks'] = JSON.parse(LocalStorage.getItem(getAuth().currentUser.uid+'-MadeDrinks'));
-    }
 
 
 }
 
-
-
 function GetPublicDrinks(){
-    if(!LocalStorage.getItem('LastUpdatedPublicDrinks')){
         FirestoreDB()
             .collection("PublicDrinks")
             .get()
             .then((drinks)=>{
                 LocalDrinks.length = 0;
-                drinks.forEach((drink)=>{
-                    LocalDrinks.push(drink.data());
-
-                })
-                console.log(LocalDrinks);
-                LocalStorage.setItem('LastUpdatedPublicDrinks', JSON.stringify(LocalDrinks));
+                drinks.forEach(drink=> LocalDrinks.push(drink.data()))
             })
-    }else{
-        LocalDrinks.length = 0;
-        LocalDrinks.push(...JSON.parse(LocalStorage.getItem('LastUpdatedPublicDrinks')));
-    }
-
 }
 
 function GetAllUsers(){
-    if(!LocalStorage.getItem('AllUsers')){
         FirestoreDB()
             .collection("Mixers")
             .get()
             .then((data)=>{
                 data.forEach((Mixer)=>{
-                    Users.push({
-                        Username: Mixer.data().Username,
-                        ...Mixer.data().ProfilePicture && {
-                            ProfilePicture: Mixer.data().ProfilePicture
-                        },
-                        UserID: Mixer.id
-                    })
+                    Users.push(Mixer.data())
                 })
             })
-            .then(()=>{
-                LocalStorage.setItem('AllUsers', JSON.stringify(Users));
-            })
-    }else{
-        Users.push(...JSON.parse(LocalStorage.getItem('AllUsers')));
-    }
+
+
 
 }
 
@@ -250,7 +198,7 @@ function AddDrinkToFavorites(drink){
         .doc(drink.idDrink)
         .set(drink)
         .then(()=>{
-            GetSavedDrinks();
+            GetBasicUserInformation();
         })
 }
 
@@ -261,14 +209,12 @@ function RemoveDrinkFromFavorites(drink){
         .doc(drink.idDrink)
         .delete()
         .then(()=>{
-            LocalStorage.removeItem(getAuth().currentUser.uid+'-SavedDrinks');
-            GetSavedDrinks();
+            GetBasicUserInformation();
         })
 }
 
 GetAllUsers();
 GetPublicDrinks();
-
 
 //Admin Functions
 function ToggleUserInformation(action){
@@ -297,7 +243,6 @@ export default {
     signOut,
     PostDrink,
     GetBasicUserInformation,
-    GetPublicDrinks,
     AddDrinkToFavorites,
     RemoveDrinkFromFavorites,
     SignInUser,
@@ -309,5 +254,6 @@ export default {
     HasProfilePicture,
     Users,
     LocalDrinks,
-    ErrorMessage
+    ErrorMessage,
+    SavedDrinksArray
 }
